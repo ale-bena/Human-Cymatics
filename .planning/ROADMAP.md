@@ -22,7 +22,12 @@ Three phases over 1-2 days. Phase 1 builds the runnable skeleton: a small map, w
   3. Sniffer icons are visible at zone centres and update their estimated count every second
   4. The window sustains 60 FPS with 50 people on the small map (no visible freeze)
   5. After the configured duration the simulation stops and displays "Simulation complete"
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 01-PLAN-foundations.md — Package structure, config constants, SMALL_MAP data dict, viz placeholder
+- [ ] 01-PLAN-agents-sniffers.md — Agent wanderer class and Sniffer noisy-count class
+- [ ] 01-PLAN-simulation.md — Simulation orchestrator with update/draw cycle
+- [ ] 01-PLAN-main.md — Pygame entry point and 60 FPS event loop
 **UI hint**: yes
 
 ### Phase 2: Full Venue + Heatmap
@@ -57,6 +62,6 @@ Three phases over 1-2 days. Phase 1 builds the runnable skeleton: a small map, w
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Engine Core | 0/TBD | Not started | - |
+| 1. Engine Core | 0/4 | Planned | - |
 | 2. Full Venue + Heatmap | 0/TBD | Not started | - |
 | 3. Analytics + Polish | 0/TBD | Not started | - |
