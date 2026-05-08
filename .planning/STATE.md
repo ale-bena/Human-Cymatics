@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-05-08)
 ## Current Position
 
 Phase: 1 of 3 (Engine Core)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: Executing
-Last activity: 2026-05-08 — Completed Plan 01 (Foundations): package structure, config, maps, viz placeholder
+Last activity: 2026-05-08 — Completed Plan 02 (Agents + Sniffers): Agent wanderer class, Sniffer zone-counting class
 
-Progress: [##░░░░░░░░] 8% (1/12 plans total)
+Progress: [###░░░░░░░] 17% (2/12 plans total)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
+- Total plans completed: 2
 - Average duration: 2 min
-- Total execution time: ~0.03 hours
+- Total execution time: ~0.07 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1: Engine Core | 1/4 | ~2 min | 2 min |
+| 1: Engine Core | 2/4 | ~4 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min)
-- Trend: -
+- Last 5 plans: 01-01 (2 min), 01-02 (2 min)
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -49,6 +49,9 @@ Recent decisions affecting current work:
 - 01-01: POI positions entrance(50,200), exit(550,200), bar(150,100), stand(450,100), bathroom(300,350)
 - 01-01: SIGMA_ERROR=2.0 as global uniform sniffer noise; hook for per-node override deferred to Phase 2
 - 01-01: viz/heatmap.py raises NotImplementedError in Phase 1 — structural placeholder only
+- 01-02: Agent.pos stored as float32 ndarray; x/y properties return int for render compatibility
+- 01-02: Sniffer.tick lazily imports find_zone_for_point to avoid circular import risk
+- 01-02: σ-per-node hook stored as self.sigma per Sniffer instance; hook comment in 4 locations
 
 ### Pending Todos
 
@@ -67,5 +70,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed Phase 1 Plan 01 (Foundations) — ready for Plan 02 (Agents)
+Stopped at: Completed Phase 1 Plan 02 (Agents + Sniffers) — ready for Plan 03 (Simulation)
 Resume file: None
