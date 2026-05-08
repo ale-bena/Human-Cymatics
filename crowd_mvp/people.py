@@ -84,3 +84,34 @@ class Agent:
     @property
     def y(self):
         return int(self.pos[1])
+
+
+class GoalAgent(Agent):
+    """Goal-oriented agent (SIM-03, D-06).
+
+    Identical movement mechanics to Agent (Wanderer) but picks only
+    'bar', 'sponsor_stand', or 'bathroom' POI as targets — never
+    entrance/exit. This concentrates agents around venue features,
+    producing visible POI clustering in the heatmap (D-08).
+    """
+
+    _GOAL_CATEGORIES = ('bar', 'sponsor_stand', 'bathroom')
+
+    def __init__(self, spawn_pos, poi_list, map_size):
+        # Filter poi_list to goal categories before super().__init__
+        # so that _pick_random_poi() override works during super().__init__.
+        self._goal_pois = [p for p in poi_list if p['category'] in self._GOAL_CATEGORIES]
+        if not self._goal_pois:
+            # Fallback: use full poi_list if no goal POIs defined
+            self._goal_pois = list(poi_list)
+        super().__init__(spawn_pos, poi_list, map_size)
+        # target_pos is already set to a goal POI via _pick_random_poi() override above
+
+    def _pick_goal_poi(self):
+        """Pick a random goal-category POI."""
+        idx = np.random.randint(0, len(self._goal_pois))
+        return np.array(self._goal_pois[idx]['pos'], dtype=np.float32)
+
+    def _pick_random_poi(self):
+        """Override: always pick from goal POIs, not all POIs."""
+        return self._pick_goal_poi()
