@@ -20,14 +20,14 @@
 - [ ] **SIM-03**: Behavior "Goal-oriented": sceglie POI (bar/bagno/stand), ci va, sosta, poi sceglie altro POI
 - [ ] **SIM-04**: Behavior "Social/clusterer": si muove verso aree ad alta densità di altre persone
 - [ ] **SIM-05**: Le persone restano nei bordi della planimetria (nessun muro interno)
-- [ ] **SIM-06**: Numero di persone configurabile via slider (default: 50 small / 150 medium / 300 large)
-- [ ] **SIM-07**: Simulazione si ferma automaticamente allo scadere del tempo (default 5 min) mostrando "Simulation complete"
+- [x] **SIM-06**: Numero di persone configurabile via slider (default: 50 small / 150 medium / 300 large)
+- [x] **SIM-07**: Simulazione si ferma automaticamente allo scadere del tempo (default 5 min) mostrando "Simulation complete"
 
 ### Sniffers
 
 - [ ] **SNF-01**: Ogni sniffer è posizionato al centro della propria zona
 - [ ] **SNF-02**: Ogni secondo, ogni sniffer conta le persone nella sua zona e aggiunge rumore: `stima = max(0, round(count_reale + N(0, σ)))`
-- [ ] **SNF-03**: σ è un parametro globale configurabile via slider dalla UI (stesso valore per tutti i nodi)
+- [x] **SNF-03**: σ è un parametro globale configurabile via slider dalla UI (stesso valore per tutti i nodi)
 - [ ] **SNF-04**: Ogni sniffer espone (zone_id, position, estimated_count, timestamp)
 
 ### Visualization
@@ -88,11 +88,11 @@
 | SIM-03 | Phase 2 | Pending |
 | SIM-04 | Phase 2 | Pending |
 | SIM-05 | Phase 1 | Pending |
-| SIM-06 | Phase 1 | Pending |
-| SIM-07 | Phase 1 | Pending |
+| SIM-06 | Phase 1 | Complete (01-01) |
+| SIM-07 | Phase 1 | Complete (01-01) |
 | SNF-01 | Phase 1 | Pending |
 | SNF-02 | Phase 1 | Pending |
-| SNF-03 | Phase 1 | Pending |
+| SNF-03 | Phase 1 | Complete (01-01) |
 | SNF-04 | Phase 1 | Pending |
 | VIZ-01 | Phase 2 | Pending |
 | VIZ-02 | Phase 3 | Pending |

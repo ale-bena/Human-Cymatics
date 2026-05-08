@@ -24,7 +24,7 @@ Three phases over 1-2 days. Phase 1 builds the runnable skeleton: a small map, w
   5. After the configured duration the simulation stops and displays "Simulation complete"
 **Plans**: 4 plans
 Plans:
-- [ ] 01-PLAN-foundations.md — Package structure, config constants, SMALL_MAP data dict, viz placeholder
+- [x] 01-PLAN-foundations.md — Package structure, config constants, SMALL_MAP data dict, viz placeholder
 - [ ] 01-PLAN-agents-sniffers.md — Agent wanderer class and Sniffer noisy-count class
 - [ ] 01-PLAN-simulation.md — Simulation orchestrator with update/draw cycle
 - [ ] 01-PLAN-main.md — Pygame entry point and 60 FPS event loop
@@ -62,6 +62,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Engine Core | 0/4 | Planned | - |
+| 1. Engine Core | 1/4 | In Progress | - |
 | 2. Full Venue + Heatmap | 0/TBD | Not started | - |
 | 3. Analytics + Polish | 0/TBD | Not started | - |

@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-05-08)
 ## Current Position
 
 Phase: 1 of 3 (Engine Core)
-Plan: 0 of 4 in current phase
-Status: Ready to execute
-Last activity: 2026-05-08 — Phase 1 planned (4 plans, 4 waves)
+Plan: 1 of 4 in current phase
+Status: Executing
+Last activity: 2026-05-08 — Completed Plan 01 (Foundations): package structure, config, maps, viz placeholder
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [##░░░░░░░░] 8% (1/12 plans total)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 2 min
+- Total execution time: ~0.03 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 1: Engine Core | 1/4 | ~2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: -
+- Last 5 plans: 01-01 (2 min)
 - Trend: -
 
 *Updated after each plan completion*
@@ -45,6 +45,10 @@ Recent decisions affecting current work:
 - Init: Pygame + NumPy/SciPy stack locked; no web dependencies
 - Init: KDE computed via NumPy → Surface (no matplotlib embed) for 60 FPS performance
 - Init: Behavior is global per run (all agents share one behavior type) to simplify MVP
+- 01-01: SMALL_MAP zone layout 2x2 grid (300x200 each), sniffer at geometric centre of zone
+- 01-01: POI positions entrance(50,200), exit(550,200), bar(150,100), stand(450,100), bathroom(300,350)
+- 01-01: SIGMA_ERROR=2.0 as global uniform sniffer noise; hook for per-node override deferred to Phase 2
+- 01-01: viz/heatmap.py raises NotImplementedError in Phase 1 — structural placeholder only
 
 ### Pending Todos
 
@@ -63,5 +67,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Phase 1 planned — 4 plans created and verified, ready to execute
+Stopped at: Completed Phase 1 Plan 01 (Foundations) — ready for Plan 02 (Agents)
 Resume file: None
