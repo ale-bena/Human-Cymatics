@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-05-08)
 
 ## Current Position
 
-Phase: 1 of 3 (Engine Core)
-Plan: 4 of 4 in current phase
-Status: Awaiting checkpoint verification (human-verify: `python crowd_mvp/main.py`)
-Last activity: 2026-05-08 — Completed Plan 04 (main.py entry point): Pygame 60 FPS event loop wired to Simulation class
+Phase: 2 of 3 (Full Venue + Heatmap)
+Plan: 0 of TBD in current phase
+Status: Ready — Phase 1 complete, verification passed 12/12
+Last activity: 2026-05-08 — Phase 1 complete: engine running, human-verify approved
 
 Progress: [#####░░░░░] 33% (4/12 plans total)
 
@@ -77,5 +77,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed Phase 1 Plan 04 (main.py entry point) — awaiting human-verify checkpoint (run `python crowd_mvp/main.py` and confirm visual)
+Stopped at: Phase 1 complete — all 4 plans executed, verification passed 12/12, human-verify approved
 Resume file: None

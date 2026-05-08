@@ -10,9 +10,11 @@ Il confronto "realtà vs stima WiFi sniffing" deve essere visivamente convincent
 
 ## Requirements
 
-### Validated
+### Validated (Phase 1)
 
-(None yet — ship to validate)
+- [x] Agenti persona con posizione (x,y), velocità e behavior wanderer (SIM-01, SIM-02, SIM-05) — Validated in Phase 1: Engine Core
+- [x] Rete sniffer con stima rumorosa per zona: `max(0, round(count_reale + N(0, σ)))` (SNF-01–SNF-04) — Validated in Phase 1: Engine Core
+- [x] Loop 60 FPS con tick sniffer ogni secondo; pausa automatica a fine simulazione (LOOP-01, LOOP-02, SIM-07) — Validated in Phase 1: Engine Core
 
 ### Active
 
@@ -89,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-08 after initialization*
+*Last updated: 2026-05-08 — Phase 1 complete (Engine Core verified 12/12)*
