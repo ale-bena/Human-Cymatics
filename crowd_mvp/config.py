@@ -39,3 +39,33 @@ COLOUR_LABEL = (40, 40, 40)
 # Font sizes
 FONT_SIZE_LABEL = 11   # POI and sniffer count labels
 FONT_SIZE_OVERLAY = 28 # "Simulation complete" text
+
+# Phase 2 — UI Layout (D-02, D-03, D-04)
+WINDOW_W = 1200          # total window width (D-02)
+WINDOW_H = 520           # total window height (D-02)
+CANVAS_W = 600           # each panel canvas width (D-05)
+CANVAS_H = 400           # each panel canvas height (D-05)
+TAB_BAR_H = 25           # tab strip height (D-04)
+CONTROL_PANEL_H = 75     # horizontal control bar height (D-03)
+STATUS_BAR_H = 20        # bottom status bar (existing, now named)
+
+# Phase 2 — Slider ranges (CTR-01)
+N_PEOPLE_MIN = 10
+N_PEOPLE_MAX = 300
+N_PEOPLE_DEFAULT = 50       # small map default
+N_PEOPLE_DEFAULT_M = 150    # medium map default
+N_PEOPLE_DEFAULT_L = 300    # large map default
+SIGMA_ERROR_MIN = 0.1
+SIGMA_ERROR_MAX = 10.0
+SIGMA_KERNEL_MIN = 10.0
+SIGMA_KERNEL_MAX = 100.0
+SIGMA_KERNEL_DEFAULT = 30.0  # KDE bandwidth in native map pixels
+
+# Phase 2 — UI Colours
+COLOUR_TAB_ACTIVE   = (60,  120, 200)   # same as COLOUR_SNIFFER — blue
+COLOUR_TAB_INACTIVE = (160, 160, 160)
+COLOUR_BTN_ACTIVE   = (60,  180, 80)    # green for selected map/behavior
+COLOUR_BTN_INACTIVE = (180, 180, 180)
+COLOUR_CONTROL_BG   = (230, 230, 230)   # control panel background
+COLOUR_SLIDER_TRACK = (160, 160, 160)
+COLOUR_SLIDER_THUMB = (60,  120, 200)
