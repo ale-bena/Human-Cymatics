@@ -267,14 +267,14 @@ def main():
 
         # Heatmap rebuild every sniffer tick — same cadence as sniffers (D-15)
         if sim.frame_count % 60 == 0:
-            positions, counts = sim.get_heatmap_data()
-            # Heatmap: pass native map size so KDE domain matches sniffer coordinate space.
-            # Sniffer positions are in native map pixels (up to 1200x800 for LARGE_MAP).
-            # build_heatmap_surface evaluates KDE on a grid matching map_size; positions
-            # outside that domain would fall off the evaluation range producing a wrong
-            # or empty heatmap for MEDIUM and LARGE maps.
+            # Use actual agent positions as KDE input so the heatmap shows real
+            # crowd density: flow corridors between POIs, central zones with high
+            # footfall, and any natural clustering — not just fixed sniffer blobs.
+            # Uniform weights (1.0 per agent) let density emerge from position alone.
+            agent_positions = [(a.x, a.y) for a in sim.agents]
+            agent_weights = [1.0] * len(agent_positions)
             raw_heatmap = build_heatmap_surface(
-                positions, counts, sim.map_size, sigma_kernel=live_sigma_kernel
+                agent_positions, agent_weights, sim.map_size, sigma_kernel=live_sigma_kernel
             )
             heatmap_surface = pygame.transform.scale(raw_heatmap, (CANVAS_W, CANVAS_H))
 
@@ -295,12 +295,10 @@ def main():
                 right_surf.blit(heatmap_surface, (0, 0))
         elif active_tab == 1:
             # D-14: initial state before first tick — flat deep blue
-            # build_heatmap_surface with zeros gives deep blue automatically
+            # Pass a single zero-weight point; KDE returns uniform deep blue
+            mw, mh = sim.map_size
             init_raw = build_heatmap_surface(
-                [(150, 100), (450, 100), (150, 300), (450, 300)],
-                [0.0, 0.0, 0.0, 0.0],
-                sim.map_size,
-                sigma_kernel=live_sigma_kernel,
+                [(mw // 2, mh // 2)], [0.0], sim.map_size, sigma_kernel=live_sigma_kernel
             )
             init_surf = pygame.transform.scale(init_raw, (CANVAS_W, CANVAS_H))
             right_surf.blit(init_surf, (0, 0))

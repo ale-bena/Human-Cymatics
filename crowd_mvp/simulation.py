@@ -78,13 +78,9 @@ class Simulation:
         self._font_label = None
         self._font_overlay = None
 
-        # Spawn all agents at entrance POI (D-04)
-        entrance = next(
-            p for p in map_def['poi'] if p['category'] == 'entrance'
-        )
-        spawn_pos = entrance['pos']
         map_size = map_def['size']
         poi_list = map_def['poi']
+        map_w, map_h = map_size
 
         # Select agent class by behavior (D-09: all agents share one behavior per run)
         _AGENT_CLASSES = {
@@ -95,8 +91,18 @@ class Simulation:
         agent_cls = _AGENT_CLASSES.get(behavior, WandererAgent)
         self._is_social = (behavior == 'social')
 
+        # Spawn agents at random positions across the map with a small margin.
+        # Spreading them out avoids the "explosion from entrance" burst and is
+        # critical for SocialAgent: if all agents spawn at the same pixel, the
+        # centroid equals self.pos and they never escape (stuck at spawn).
+        import random as _random
+        margin = 20
         self.agents = [
-            agent_cls(spawn_pos, poi_list, map_size)
+            agent_cls(
+                (_random.uniform(margin, map_w - margin),
+                 _random.uniform(margin, map_h - margin)),
+                poi_list, map_size
+            )
             for _ in range(n_people)
         ]
 
