@@ -20,7 +20,7 @@ from crowd_mvp.config import (
     FONT_SIZE_LABEL, FONT_SIZE_OVERLAY,
 )
 from crowd_mvp.maps import get_sniffer_positions
-from crowd_mvp.people import Agent
+from crowd_mvp.people import Agent, GoalAgent, SocialAgent, WandererAgent
 from crowd_mvp.sniffers import Sniffer
 
 
@@ -55,13 +55,14 @@ class Simulation:
             ...
     """
 
-    def __init__(self, map_def, n_people=N_PEOPLE, sigma=SIGMA_ERROR, duration=SIM_DURATION):
+    def __init__(self, map_def, n_people=N_PEOPLE, sigma=SIGMA_ERROR, duration=SIM_DURATION, behavior='wanderer'):
         """
         Args:
             map_def:   map definition dict (SMALL_MAP or future maps)
             n_people:  number of agents to spawn (SIM-06)
             sigma:     Gaussian noise std dev for all sniffers (SNF-03)
             duration:  seconds before auto-stop (SIM-07)
+            behavior:  agent behavior type: 'wanderer' | 'goal' | 'social' (D-09)
         """
         self.map_def = map_def
         self.n_people = n_people
@@ -69,6 +70,7 @@ class Simulation:
         self.duration = duration
         self.duration_frames = int(duration * FPS)
 
+        self.behavior = behavior  # 'wanderer' | 'goal' | 'social'
         self.frame_count = 0
         self._complete = False
 
@@ -84,8 +86,17 @@ class Simulation:
         map_size = map_def['size']
         poi_list = map_def['poi']
 
+        # Select agent class by behavior (D-09: all agents share one behavior per run)
+        _AGENT_CLASSES = {
+            'wanderer': WandererAgent,
+            'goal':     GoalAgent,
+            'social':   SocialAgent,
+        }
+        agent_cls = _AGENT_CLASSES.get(behavior, WandererAgent)
+        self._is_social = (behavior == 'social')
+
         self.agents = [
-            Agent(spawn_pos, poi_list, map_size)
+            agent_cls(spawn_pos, poi_list, map_size)
             for _ in range(n_people)
         ]
 
@@ -112,9 +123,13 @@ class Simulation:
         if self._complete:
             return
 
-        # Advance all agents
-        for agent in self.agents:
-            agent.update()
+        # Advance all agents (D-09: behavior-specific update)
+        if self._is_social:
+            for agent in self.agents:
+                agent.update_social(self.agents)
+        else:
+            for agent in self.agents:
+                agent.update()
 
         # Sniffer tick every ~1 second (D-10, LOOP-02)
         if self.frame_count % SNIFFER_TICK_FRAMES == 0:
@@ -130,6 +145,25 @@ class Simulation:
         """Recount agents per zone and update noisy estimates (LOOP-02)."""
         for sniffer in self.sniffers:
             sniffer.tick(self.agents, self.map_def, self.frame_count)
+
+    def get_heatmap_data(self):
+        """Return sniffer positions and estimated counts for heatmap rendering (D-16).
+
+        Called by main.py every sniffer tick (same cadence as _tick_sniffers).
+        Returns data in native map pixel coordinates — main.py applies scale transform.
+
+        Returns:
+            positions: list of (x, y) tuples — sniffer positions in map pixels
+            counts:    list of float         — estimated_count per sniffer (same order)
+        """
+        positions = [s.pos for s in self.sniffers]
+        counts = [float(s.estimated_count) for s in self.sniffers]
+        return positions, counts
+
+    @property
+    def map_size(self):
+        """Native map size (width, height) in pixels."""
+        return self.map_def['size']
 
     def draw(self, surface):
         """Render entire scene to surface (LOOP-01).
@@ -179,6 +213,69 @@ class Simulation:
         # 6. End overlay (D-11, SIM-07)
         if self._complete:
             self._draw_completion_overlay(surface, map_w, map_h)
+
+    def draw_scaled(self, surface, canvas_w, canvas_h):
+        """Render simulation to surface scaled to fit canvas_w x canvas_h (D-05).
+
+        Computes a uniform scale factor so the native map fits within the canvas
+        without overflow. All coordinates — zones, POI, agents, sniffers — are
+        transformed before drawing. Called by main.py instead of draw() for the
+        left panel.
+
+        Args:
+            surface:   pygame.Surface to draw onto (subsurface of left panel)
+            canvas_w:  int — target canvas width in pixels (e.g. CANVAS_W = 600)
+            canvas_h:  int — target canvas height in pixels (e.g. CANVAS_H = 400)
+        """
+        map_w, map_h = self.map_def['size']
+        scale = min(canvas_w / map_w, canvas_h / map_h)
+
+        # Background
+        surface.fill(self.map_def.get('bg_colour', (30, 30, 30)))
+
+        # Zones
+        for zone in self.map_def.get('zones', []):
+            x, y, w, h = zone['rect']
+            scaled_rect = pygame.Rect(
+                int(x * scale), int(y * scale),
+                int(w * scale), int(h * scale),
+            )
+            colour = zone.get('colour', (60, 60, 80))
+            pygame.draw.rect(surface, colour, scaled_rect)
+            pygame.draw.rect(surface, (100, 100, 120), scaled_rect, 1)
+
+            # Zone label (optional)
+            label = zone.get('label')
+            if label and hasattr(self, '_font_zone'):
+                txt = self._font_zone.render(label, True, (200, 200, 200))
+                surface.blit(txt, (scaled_rect.x + 2, scaled_rect.y + 2))
+
+        # POI markers
+        for poi in self.map_def.get('pois', self.map_def.get('poi', [])):
+            px, py = poi['pos']
+            pygame.draw.circle(
+                surface, (255, 220, 50),
+                (int(px * scale), int(py * scale)),
+                max(3, int(6 * scale)),
+            )
+
+        # Agents
+        for agent in self.agents:
+            ax = int(agent.x * scale)
+            ay = int(agent.y * scale)
+            r = max(2, int(3 * scale))
+            pygame.draw.circle(surface, (220, 220, 255), (ax, ay), r)
+
+        # Sniffers
+        for sniffer in self.sniffers:
+            sx = int(sniffer.pos[0] * scale)
+            sy = int(sniffer.pos[1] * scale)
+            sr = max(4, int(8 * scale))
+            pygame.draw.circle(surface, (80, 200, 120), (sx, sy), sr, 2)
+            # Estimated count label
+            if hasattr(self, '_font_sniffer'):
+                ct = self._font_sniffer.render(str(sniffer.estimated_count), True, (80, 200, 120))
+                surface.blit(ct, (sx + sr + 1, sy - ct.get_height() // 2))
 
     def _ensure_fonts(self):
         """Initialise fonts on first draw call (Pygame must already be initialised)."""
