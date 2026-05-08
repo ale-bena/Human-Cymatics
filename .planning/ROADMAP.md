@@ -40,7 +40,13 @@ Plans:
   3. Dragging the n_people slider changes the agent count on Reset; dragging σ_error visibly changes how noisy the sniffer estimates are
   4. Tab 1 shows a smooth colour heatmap (viridis or hot) blended over the map that updates as people move
   5. Pressing keys 1 / 2 / 3 or clicking tab buttons switches the active visualisation pane
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 02-01-PLAN.md — Phase 2 config constants + MEDIUM_MAP + LARGE_MAP definitions
+- [ ] 02-02-PLAN.md — GoalAgent and SocialAgent classes (+ WandererAgent alias)
+- [ ] 02-03-PLAN.md — KDE heatmap implementation in viz/heatmap.py (viridis + scipy)
+- [ ] 02-04-PLAN.md — Simulation behavior param + get_heatmap_data() + all-map support
+- [ ] 02-05-PLAN.md — Full main.py rewrite: 1200x520 window, dual panels, tab bar, control panel
 **UI hint**: yes
 
 ### Phase 3: Analytics + Polish
@@ -63,5 +69,5 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Engine Core | 4/4 | Awaiting human-verify | - |
-| 2. Full Venue + Heatmap | 0/TBD | Not started | - |
+| 2. Full Venue + Heatmap | 0/5 | Not started | - |
 | 3. Analytics + Polish | 0/TBD | Not started | - |
