@@ -35,7 +35,7 @@
 - [ ] **VIZ-01**: Tab 1 — Heatmap KDE bivariato calcolata dalle stime sniffer, aggiornata in tempo reale, sovrapposta alla mappa con alpha blending (colormap viridis o hot)
 - [ ] **VIZ-02**: Tab 2 — Confronto ground truth (persone reali + zone colorate per count_reale) vs stima (zone colorate per estimated_count), split-screen o overlay semitrasparente
 - [ ] **VIZ-03**: Tab 3 — Matrice di traffico accumulata nel tempo, renderizzata come heatmap (colormap plasma), con traiettorie di un subset di persone come linee colorate
-- [ ] **VIZ-04**: Icone sniffer sempre visibili sulla mappa in tutte e tre le tab
+- [x] **VIZ-04**: Icone sniffer sempre visibili sulla mappa in tutte e tre le tab
 - [ ] **VIZ-05**: Switching tra tab con tasti 1/2/3 o bottoni nella UI
 
 ### Controls
@@ -47,8 +47,8 @@
 
 ### Loop
 
-- [ ] **LOOP-01**: Main loop a 60 FPS: aggiorna posizioni persone, renderizza mappa + persone + sniffer + tab attiva + UI
-- [ ] **LOOP-02**: Ogni 60 frame (1 secondo simulato): ricalcola stime sniffer, aggiorna matrice traffico
+- [x] **LOOP-01**: Main loop a 60 FPS: aggiorna posizioni persone, renderizza mappa + persone + sniffer + tab attiva + UI
+- [x] **LOOP-02**: Ogni 60 frame (1 secondo simulato): ricalcola stime sniffer, aggiorna matrice traffico
 
 ## v2 Requirements
 
@@ -97,14 +97,14 @@
 | VIZ-01 | Phase 2 | Pending |
 | VIZ-02 | Phase 3 | Pending |
 | VIZ-03 | Phase 3 | Pending |
-| VIZ-04 | Phase 1 | Pending |
+| VIZ-04 | Phase 1 | Complete (01-03) |
 | VIZ-05 | Phase 2 | Pending |
 | CTR-01 | Phase 2 | Pending |
 | CTR-02 | Phase 3 | Pending |
 | CTR-03 | Phase 3 | Pending |
 | CTR-04 | Phase 3 | Pending |
-| LOOP-01 | Phase 1 | Pending |
-| LOOP-02 | Phase 1 | Pending |
+| LOOP-01 | Phase 1 | Complete (01-03) |
+| LOOP-02 | Phase 1 | Complete (01-03) |
 
 **Coverage:**
 - v1 requirements: 27 total

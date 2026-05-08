@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-05-08)
 ## Current Position
 
 Phase: 1 of 3 (Engine Core)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: Executing
-Last activity: 2026-05-08 — Completed Plan 02 (Agents + Sniffers): Agent wanderer class, Sniffer zone-counting class
+Last activity: 2026-05-08 — Completed Plan 03 (Simulation class): Simulation orchestrator with full update/draw cycle
 
-Progress: [###░░░░░░░] 17% (2/12 plans total)
+Progress: [####░░░░░░] 25% (3/12 plans total)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 2 min
-- Total execution time: ~0.07 hours
+- Total execution time: ~0.1 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1: Engine Core | 2/4 | ~4 min | 2 min |
+| 1: Engine Core | 3/4 | ~6 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (2 min)
+- Last 5 plans: 01-01 (2 min), 01-02 (2 min), 01-03 (2 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -52,6 +52,9 @@ Recent decisions affecting current work:
 - 01-02: Agent.pos stored as float32 ndarray; x/y properties return int for render compatibility
 - 01-02: Sniffer.tick lazily imports find_zone_for_point to avoid circular import risk
 - 01-02: σ-per-node hook stored as self.sigma per Sniffer instance; hook comment in 4 locations
+- 01-03: import math at top level (not local to _draw_sniffer) for cleaner module structure
+- 01-03: WiFi arc angles 225-315 deg give upward-pointing fan in Pygame screen-coordinate system
+- 01-03: frame_count incremented after sniffer tick check so first tick fires at frame 0
 
 ### Pending Todos
 
@@ -70,5 +73,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed Phase 1 Plan 02 (Agents + Sniffers) — ready for Plan 03 (Simulation)
+Stopped at: Completed Phase 1 Plan 03 (Simulation class) — ready for Plan 04 (main.py entry point)
 Resume file: None
