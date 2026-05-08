@@ -1,9 +1,9 @@
 {
   "version": "1.0",
-  "timestamp": "2026-05-08T16:59:19Z",
+  "timestamp": "2026-05-08T17:29:08Z",
   "phase": "2",
   "phase_name": "Full Venue + Heatmap",
-  "phase_dir": null,
+  "phase_dir": ".planning/phases/02-full-venue-heatmap",
   "plan": 0,
   "task": 0,
   "total_tasks": 0,
@@ -12,23 +12,30 @@
     {"id": "01-01", "name": "Package foundations + SMALL_MAP + viz placeholder", "status": "done", "commit": "aa76a8f"},
     {"id": "01-02", "name": "Agent wanderer + Sniffer noisy-count classes", "status": "done", "commit": "965b6d3"},
     {"id": "01-03", "name": "Simulation orchestrator with update/draw cycle", "status": "done", "commit": "887b016"},
-    {"id": "01-04", "name": "Pygame entry point + 60 FPS event loop", "status": "done", "commit": "0fc001d"}
+    {"id": "01-04", "name": "Pygame entry point + 60 FPS event loop", "status": "done", "commit": "0fc001d"},
+    {"id": "02-context", "name": "Phase 2 context discussion (CONTEXT.md + DISCUSSION-LOG.md)", "status": "done", "commit": "d568ff3"}
   ],
   "remaining_tasks": [
-    {"id": "phase-2", "name": "Full Venue + Heatmap — requires /gsd-plan-phase 2 first", "status": "not_started"}
+    {"id": "02-plan", "name": "Plan Phase 2 — run /gsd-plan-phase 2", "status": "not_started"},
+    {"id": "02-execute", "name": "Execute Phase 2 plans", "status": "not_started"}
   ],
   "blockers": [],
   "human_actions_pending": [],
   "decisions": [
     {"decision": "Pygame + NumPy/SciPy stack locked; no web dependencies", "rationale": "single-process local demo", "phase": "init"},
-    {"decision": "KDE computed via NumPy → Surface (no matplotlib embed)", "rationale": "60 FPS performance", "phase": "init"},
-    {"decision": "SIGMA_ERROR=2.0 uniform sniffer noise; per-node override deferred", "rationale": "MVP simplicity", "phase": "01"},
-    {"decision": "viz/heatmap.py raises NotImplementedError in Phase 1", "rationale": "structural placeholder only", "phase": "01"},
-    {"decision": "Agent.pos as float32 ndarray; x/y properties return int for render", "rationale": "render compatibility", "phase": "01"},
-    {"decision": "WiFi arc angles 225-315 deg = upward-pointing fan in Pygame screen coords", "rationale": "visual clarity", "phase": "01"},
-    {"decision": "Window 600x420 = map 600x400 + 20px status bar", "rationale": "layout constraint", "phase": "01"}
+    {"decision": "KDE computed via NumPy -> Surface (no matplotlib embed)", "rationale": "60 FPS performance", "phase": "init"},
+    {"decision": "Dual-panel Tab 1: left=simulation (agents), right=sniffer KDE heatmap side by side", "rationale": "User requested 'duplicate the map — one simulation, one heatmap'", "phase": "02"},
+    {"decision": "Window 1200x520px — two 600x400 panels + tab bar + horizontal control panel + status bar", "rationale": "Fixed map canvas; all maps scale to 600x400", "phase": "02"},
+    {"decision": "Control panel: horizontal bar below both panels (Map:[S][M][L], Behav:[W][G][C], sliders, Reset)", "rationale": "Full-width layout fits both panels", "phase": "02"},
+    {"decision": "Tab bar at bottom of map panels, above control panel", "rationale": "User chose bottom position", "phase": "02"},
+    {"decision": "Goal-oriented: random POI loop forever (no exit mechanic)", "rationale": "Keeps agents on map throughout demo", "phase": "02"},
+    {"decision": "Social behavior: K=10 nearest-neighbors centroid attraction + jitter", "rationale": "Simple, creates clearly visible clusters", "phase": "02"},
+    {"decision": "Map/n_people: staged — apply on Reset only. Phase 2 adds Reset button.", "rationale": "Clean UX for pitch", "phase": "02"},
+    {"decision": "sigma_error and sigma_kernel: live update on drag", "rationale": "Real-time demo of estimation quality", "phase": "02"},
+    {"decision": "Colormap: viridis (blue->green->yellow)", "rationale": "User chose analytical look", "phase": "02"},
+    {"decision": "Initial heatmap: flat low-intensity viridis from frame 0", "rationale": "Smooth transition, no waiting text", "phase": "02"}
   ],
   "uncommitted_files": [],
-  "next_action": "Run /gsd-plan-phase 2 to plan Phase 2: Full Venue + Heatmap",
-  "context_notes": "Phase 1 fully verified (12/12), human-approved. Entry point: python crowd_mvp/main.py. Phase 2 needs: all 3 maps, 3 behaviors, control panel sliders, Tab 1 KDE heatmap overlay. GSD updated to v1.41.0 in this session."
+  "next_action": "Run /gsd-plan-phase 2 to create the Phase 2 execution plan",
+  "context_notes": "Phase 2 context fully gathered. KEY CHANGE from original spec: VIZ-01 is now a dual-panel side-by-side (simulation | heatmap) rather than an overlay — user explicitly requested this. Window expands to 1200x520. CONTEXT.md at .planning/phases/02-full-venue-heatmap/02-CONTEXT.md. All Phase 1 code clean and committed. Entry point: python crowd_mvp/main.py."
 }
