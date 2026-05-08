@@ -1,0 +1,34 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-05-08T16:59:19Z",
+  "phase": "2",
+  "phase_name": "Full Venue + Heatmap",
+  "phase_dir": null,
+  "plan": 0,
+  "task": 0,
+  "total_tasks": 0,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": "01-01", "name": "Package foundations + SMALL_MAP + viz placeholder", "status": "done", "commit": "aa76a8f"},
+    {"id": "01-02", "name": "Agent wanderer + Sniffer noisy-count classes", "status": "done", "commit": "965b6d3"},
+    {"id": "01-03", "name": "Simulation orchestrator with update/draw cycle", "status": "done", "commit": "887b016"},
+    {"id": "01-04", "name": "Pygame entry point + 60 FPS event loop", "status": "done", "commit": "0fc001d"}
+  ],
+  "remaining_tasks": [
+    {"id": "phase-2", "name": "Full Venue + Heatmap — requires /gsd-plan-phase 2 first", "status": "not_started"}
+  ],
+  "blockers": [],
+  "human_actions_pending": [],
+  "decisions": [
+    {"decision": "Pygame + NumPy/SciPy stack locked; no web dependencies", "rationale": "single-process local demo", "phase": "init"},
+    {"decision": "KDE computed via NumPy → Surface (no matplotlib embed)", "rationale": "60 FPS performance", "phase": "init"},
+    {"decision": "SIGMA_ERROR=2.0 uniform sniffer noise; per-node override deferred", "rationale": "MVP simplicity", "phase": "01"},
+    {"decision": "viz/heatmap.py raises NotImplementedError in Phase 1", "rationale": "structural placeholder only", "phase": "01"},
+    {"decision": "Agent.pos as float32 ndarray; x/y properties return int for render", "rationale": "render compatibility", "phase": "01"},
+    {"decision": "WiFi arc angles 225-315 deg = upward-pointing fan in Pygame screen coords", "rationale": "visual clarity", "phase": "01"},
+    {"decision": "Window 600x420 = map 600x400 + 20px status bar", "rationale": "layout constraint", "phase": "01"}
+  ],
+  "uncommitted_files": [],
+  "next_action": "Run /gsd-plan-phase 2 to plan Phase 2: Full Venue + Heatmap",
+  "context_notes": "Phase 1 fully verified (12/12), human-approved. Entry point: python crowd_mvp/main.py. Phase 2 needs: all 3 maps, 3 behaviors, control panel sliders, Tab 1 KDE heatmap overlay. GSD updated to v1.41.0 in this session."
+}
