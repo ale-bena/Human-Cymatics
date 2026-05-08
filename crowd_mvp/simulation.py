@@ -20,7 +20,7 @@ from crowd_mvp.config import (
     FONT_SIZE_LABEL, FONT_SIZE_OVERLAY,
 )
 from crowd_mvp.maps import get_sniffer_positions
-from crowd_mvp.people import Agent
+from crowd_mvp.people import Agent, GoalAgent, SocialAgent, WandererAgent
 from crowd_mvp.sniffers import Sniffer
 
 
@@ -55,13 +55,14 @@ class Simulation:
             ...
     """
 
-    def __init__(self, map_def, n_people=N_PEOPLE, sigma=SIGMA_ERROR, duration=SIM_DURATION):
+    def __init__(self, map_def, n_people=N_PEOPLE, sigma=SIGMA_ERROR, duration=SIM_DURATION, behavior='wanderer'):
         """
         Args:
             map_def:   map definition dict (SMALL_MAP or future maps)
             n_people:  number of agents to spawn (SIM-06)
             sigma:     Gaussian noise std dev for all sniffers (SNF-03)
             duration:  seconds before auto-stop (SIM-07)
+            behavior:  agent behavior type: 'wanderer' | 'goal' | 'social' (D-09)
         """
         self.map_def = map_def
         self.n_people = n_people
@@ -69,6 +70,7 @@ class Simulation:
         self.duration = duration
         self.duration_frames = int(duration * FPS)
 
+        self.behavior = behavior  # 'wanderer' | 'goal' | 'social'
         self.frame_count = 0
         self._complete = False
 
@@ -84,8 +86,17 @@ class Simulation:
         map_size = map_def['size']
         poi_list = map_def['poi']
 
+        # Select agent class by behavior (D-09: all agents share one behavior per run)
+        _AGENT_CLASSES = {
+            'wanderer': WandererAgent,
+            'goal':     GoalAgent,
+            'social':   SocialAgent,
+        }
+        agent_cls = _AGENT_CLASSES.get(behavior, WandererAgent)
+        self._is_social = (behavior == 'social')
+
         self.agents = [
-            Agent(spawn_pos, poi_list, map_size)
+            agent_cls(spawn_pos, poi_list, map_size)
             for _ in range(n_people)
         ]
 
@@ -112,9 +123,13 @@ class Simulation:
         if self._complete:
             return
 
-        # Advance all agents
-        for agent in self.agents:
-            agent.update()
+        # Advance all agents (D-09: behavior-specific update)
+        if self._is_social:
+            for agent in self.agents:
+                agent.update_social(self.agents)
+        else:
+            for agent in self.agents:
+                agent.update()
 
         # Sniffer tick every ~1 second (D-10, LOOP-02)
         if self.frame_count % SNIFFER_TICK_FRAMES == 0:
