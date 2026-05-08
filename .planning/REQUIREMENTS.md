@@ -78,22 +78,39 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MAP-01..05 | Phase 2 | Pending |
-| SIM-01..07 | Phase 1 | Pending |
-| SNF-01..04 | Phase 1 | Pending |
+| MAP-01 | Phase 2 | Pending |
+| MAP-02 | Phase 2 | Pending |
+| MAP-03 | Phase 2 | Pending |
+| MAP-04 | Phase 2 | Pending |
+| MAP-05 | Phase 2 | Pending |
+| SIM-01 | Phase 1 | Pending |
+| SIM-02 | Phase 1 | Pending |
+| SIM-03 | Phase 2 | Pending |
+| SIM-04 | Phase 2 | Pending |
+| SIM-05 | Phase 1 | Pending |
+| SIM-06 | Phase 1 | Pending |
+| SIM-07 | Phase 1 | Pending |
+| SNF-01 | Phase 1 | Pending |
+| SNF-02 | Phase 1 | Pending |
+| SNF-03 | Phase 1 | Pending |
+| SNF-04 | Phase 1 | Pending |
 | VIZ-01 | Phase 2 | Pending |
 | VIZ-02 | Phase 3 | Pending |
 | VIZ-03 | Phase 3 | Pending |
 | VIZ-04 | Phase 1 | Pending |
 | VIZ-05 | Phase 2 | Pending |
-| CTR-01..04 | Phase 2 | Pending |
-| LOOP-01..02 | Phase 1 | Pending |
+| CTR-01 | Phase 2 | Pending |
+| CTR-02 | Phase 3 | Pending |
+| CTR-03 | Phase 3 | Pending |
+| CTR-04 | Phase 3 | Pending |
+| LOOP-01 | Phase 1 | Pending |
+| LOOP-02 | Phase 1 | Pending |
 
 **Coverage:**
-- v1 requirements: 24 total
-- Mapped to phases: 24
+- v1 requirements: 27 total
+- Mapped to phases: 27
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-08*
-*Last updated: 2026-05-08 after initial definition*
+*Last updated: 2026-05-08 after roadmap creation*
