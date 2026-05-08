@@ -21,6 +21,70 @@ SMALL_MAP = {
 }
 
 
+MEDIUM_MAP = {
+    'size': (900, 600),
+    'zones': [
+        {'id': 'A', 'rect': (0,   0,   225, 300)},  # top-left
+        {'id': 'B', 'rect': (225, 0,   225, 300)},  # top col-2
+        {'id': 'C', 'rect': (450, 0,   225, 300)},  # top col-3
+        {'id': 'D', 'rect': (675, 0,   225, 300)},  # top-right
+        {'id': 'E', 'rect': (0,   300, 225, 300)},  # bottom-left
+        {'id': 'F', 'rect': (225, 300, 225, 300)},  # bottom col-2
+        {'id': 'G', 'rect': (450, 300, 225, 300)},  # bottom col-3
+        {'id': 'H', 'rect': (675, 300, 225, 300)},  # bottom-right
+    ],
+    'poi': [
+        {'id': 'entrance',   'category': 'entrance',      'pos': (50,  300)},
+        {'id': 'exit',       'category': 'exit',          'pos': (850, 300)},
+        {'id': 'bar_1',      'category': 'bar',           'pos': (225, 150)},
+        {'id': 'bar_2',      'category': 'bar',           'pos': (675, 450)},
+        {'id': 'stand_1',    'category': 'sponsor_stand', 'pos': (450, 150)},
+        {'id': 'stand_2',    'category': 'sponsor_stand', 'pos': (225, 450)},
+        {'id': 'bathroom_1', 'category': 'bathroom',      'pos': (675, 150)},
+        {'id': 'bathroom_2', 'category': 'bathroom',      'pos': (450, 450)},
+        {'id': 'bar_3',      'category': 'bar',           'pos': (112, 450)},
+        {'id': 'stand_3',    'category': 'sponsor_stand', 'pos': (787, 150)},
+    ]
+}
+
+LARGE_MAP = {
+    'size': (1200, 800),
+    'zones': [
+        {'id': 'A', 'rect': (0,   0,   300, 266)},  # row 0 col 0
+        {'id': 'B', 'rect': (300, 0,   300, 266)},  # row 0 col 1
+        {'id': 'C', 'rect': (600, 0,   300, 266)},  # row 0 col 2
+        {'id': 'D', 'rect': (900, 0,   300, 266)},  # row 0 col 3
+        {'id': 'E', 'rect': (0,   266, 300, 266)},  # row 1 col 0
+        {'id': 'F', 'rect': (300, 266, 300, 266)},  # row 1 col 1
+        {'id': 'G', 'rect': (600, 266, 300, 266)},  # row 1 col 2
+        {'id': 'H', 'rect': (900, 266, 300, 266)},  # row 1 col 3
+        {'id': 'I', 'rect': (0,   532, 300, 268)},  # row 2 col 0
+        {'id': 'J', 'rect': (300, 532, 300, 268)},  # row 2 col 1
+        {'id': 'K', 'rect': (600, 532, 300, 268)},  # row 2 col 2
+        {'id': 'L', 'rect': (900, 532, 300, 268)},  # row 2 col 3
+    ],
+    'poi': [
+        {'id': 'entrance',   'category': 'entrance',      'pos': (60,   400)},
+        {'id': 'exit',       'category': 'exit',          'pos': (1140, 400)},
+        {'id': 'bar_1',      'category': 'bar',           'pos': (300,  133)},
+        {'id': 'bar_2',      'category': 'bar',           'pos': (900,  133)},
+        {'id': 'bar_3',      'category': 'bar',           'pos': (600,  666)},
+        {'id': 'stand_1',    'category': 'sponsor_stand', 'pos': (600,  133)},
+        {'id': 'stand_2',    'category': 'sponsor_stand', 'pos': (300,  666)},
+        {'id': 'stand_3',    'category': 'sponsor_stand', 'pos': (900,  666)},
+        {'id': 'bathroom_1', 'category': 'bathroom',      'pos': (150,  266)},
+        {'id': 'bathroom_2', 'category': 'bathroom',      'pos': (750,  400)},
+        {'id': 'bathroom_3', 'category': 'bathroom',      'pos': (1050, 532)},
+        {'id': 'bar_4',      'category': 'bar',           'pos': (450,  400)},
+        {'id': 'stand_4',    'category': 'sponsor_stand', 'pos': (150,  666)},
+        {'id': 'bar_5',      'category': 'bar',           'pos': (1050, 266)},
+        {'id': 'stand_5',    'category': 'sponsor_stand', 'pos': (750,  133)},
+    ]
+}
+
+ALL_MAPS = {'S': SMALL_MAP, 'M': MEDIUM_MAP, 'L': LARGE_MAP}
+
+
 def get_sniffer_positions(map_def):
     """Return list of (zone_id, center_x, center_y) for each zone.
     Sniffer is placed at the geometric centre of its zone (SNF-01).
