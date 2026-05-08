@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-05-08)
 ## Current Position
 
 Phase: 1 of 3 (Engine Core)
-Plan: 3 of 4 in current phase
-Status: Executing
-Last activity: 2026-05-08 — Completed Plan 03 (Simulation class): Simulation orchestrator with full update/draw cycle
+Plan: 4 of 4 in current phase
+Status: Awaiting checkpoint verification (human-verify: `python crowd_mvp/main.py`)
+Last activity: 2026-05-08 — Completed Plan 04 (main.py entry point): Pygame 60 FPS event loop wired to Simulation class
 
-Progress: [####░░░░░░] 25% (3/12 plans total)
+Progress: [#####░░░░░] 33% (4/12 plans total)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 2 min
 - Total execution time: ~0.1 hours
 
@@ -27,10 +27,10 @@ Progress: [####░░░░░░] 25% (3/12 plans total)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1: Engine Core | 3/4 | ~6 min | 2 min |
+| 1: Engine Core | 4/4 | ~9 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (2 min), 01-03 (2 min)
+- Last 5 plans: 01-01 (2 min), 01-02 (2 min), 01-03 (2 min), 01-04 (3 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -55,14 +55,18 @@ Recent decisions affecting current work:
 - 01-03: import math at top level (not local to _draw_sniffer) for cleaner module structure
 - 01-03: WiFi arc angles 225-315 deg give upward-pointing fan in Pygame screen-coordinate system
 - 01-03: frame_count incremented after sniffer tick check so first tick fires at frame 0
+- 01-04: Window size 600x420 = map 600x400 + status bar 20px; status bar filled grey (200,200,200)
+- 01-04: Status bar format: FPS | Time: elapsed/total s | Agents: N — live investor-facing metrics
+- 01-04: screen.subsurface() pattern for zero-overhead partition rendering (no extra blit per frame)
+- 01-04: Elapsed time derived from sim.frame_count / FPS for determinism
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 ## Deferred Items
 
@@ -73,5 +77,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed Phase 1 Plan 03 (Simulation class) — ready for Plan 04 (main.py entry point)
+Stopped at: Completed Phase 1 Plan 04 (main.py entry point) — awaiting human-verify checkpoint (run `python crowd_mvp/main.py` and confirm visual)
 Resume file: None

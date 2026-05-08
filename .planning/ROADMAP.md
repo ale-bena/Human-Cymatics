@@ -6,7 +6,7 @@ Three phases over 1-2 days. Phase 1 builds the runnable skeleton: a small map, w
 
 ## Phases
 
-- [ ] **Phase 1: Engine Core** - Runnable simulation with small map, wanderers, sniffer network, 60 FPS render loop
+- [x] **Phase 1: Engine Core** - Runnable simulation with small map, wanderers, sniffer network, 60 FPS render loop
 - [ ] **Phase 2: Full Venue + Heatmap** - All 3 maps, all 3 behaviors, control panel, Tab 1 KDE heatmap
 - [ ] **Phase 3: Analytics + Polish** - Tab 2 comparison, Tab 3 traffic, Start/Pause/Reset, timer, UI polish
 
@@ -27,7 +27,7 @@ Plans:
 - [x] 01-PLAN-foundations.md — Package structure, config constants, SMALL_MAP data dict, viz placeholder
 - [x] 01-PLAN-agents-sniffers.md — Agent wanderer class and Sniffer noisy-count class
 - [x] 01-PLAN-simulation.md — Simulation orchestrator with update/draw cycle
-- [ ] 01-PLAN-main.md — Pygame entry point and 60 FPS event loop
+- [x] 01-PLAN-main.md — Pygame entry point and 60 FPS event loop
 **UI hint**: yes
 
 ### Phase 2: Full Venue + Heatmap
@@ -62,6 +62,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Engine Core | 3/4 | In Progress | - |
+| 1. Engine Core | 4/4 | Awaiting human-verify | - |
 | 2. Full Venue + Heatmap | 0/TBD | Not started | - |
 | 3. Analytics + Polish | 0/TBD | Not started | - |
