@@ -146,6 +146,25 @@ class Simulation:
         for sniffer in self.sniffers:
             sniffer.tick(self.agents, self.map_def, self.frame_count)
 
+    def get_heatmap_data(self):
+        """Return sniffer positions and estimated counts for heatmap rendering (D-16).
+
+        Called by main.py every sniffer tick (same cadence as _tick_sniffers).
+        Returns data in native map pixel coordinates — main.py applies scale transform.
+
+        Returns:
+            positions: list of (x, y) tuples — sniffer positions in map pixels
+            counts:    list of float         — estimated_count per sniffer (same order)
+        """
+        positions = [s.pos for s in self.sniffers]
+        counts = [float(s.estimated_count) for s in self.sniffers]
+        return positions, counts
+
+    @property
+    def map_size(self):
+        """Native map size (width, height) in pixels."""
+        return self.map_def['size']
+
     def draw(self, surface):
         """Render entire scene to surface (LOOP-01).
 
@@ -194,6 +213,69 @@ class Simulation:
         # 6. End overlay (D-11, SIM-07)
         if self._complete:
             self._draw_completion_overlay(surface, map_w, map_h)
+
+    def draw_scaled(self, surface, canvas_w, canvas_h):
+        """Render simulation to surface scaled to fit canvas_w x canvas_h (D-05).
+
+        Computes a uniform scale factor so the native map fits within the canvas
+        without overflow. All coordinates — zones, POI, agents, sniffers — are
+        transformed before drawing. Called by main.py instead of draw() for the
+        left panel.
+
+        Args:
+            surface:   pygame.Surface to draw onto (subsurface of left panel)
+            canvas_w:  int — target canvas width in pixels (e.g. CANVAS_W = 600)
+            canvas_h:  int — target canvas height in pixels (e.g. CANVAS_H = 400)
+        """
+        map_w, map_h = self.map_def['size']
+        scale = min(canvas_w / map_w, canvas_h / map_h)
+
+        # Background
+        surface.fill(self.map_def.get('bg_colour', (30, 30, 30)))
+
+        # Zones
+        for zone in self.map_def.get('zones', []):
+            x, y, w, h = zone['rect']
+            scaled_rect = pygame.Rect(
+                int(x * scale), int(y * scale),
+                int(w * scale), int(h * scale),
+            )
+            colour = zone.get('colour', (60, 60, 80))
+            pygame.draw.rect(surface, colour, scaled_rect)
+            pygame.draw.rect(surface, (100, 100, 120), scaled_rect, 1)
+
+            # Zone label (optional)
+            label = zone.get('label')
+            if label and hasattr(self, '_font_zone'):
+                txt = self._font_zone.render(label, True, (200, 200, 200))
+                surface.blit(txt, (scaled_rect.x + 2, scaled_rect.y + 2))
+
+        # POI markers
+        for poi in self.map_def.get('pois', self.map_def.get('poi', [])):
+            px, py = poi['pos']
+            pygame.draw.circle(
+                surface, (255, 220, 50),
+                (int(px * scale), int(py * scale)),
+                max(3, int(6 * scale)),
+            )
+
+        # Agents
+        for agent in self.agents:
+            ax = int(agent.x * scale)
+            ay = int(agent.y * scale)
+            r = max(2, int(3 * scale))
+            pygame.draw.circle(surface, (220, 220, 255), (ax, ay), r)
+
+        # Sniffers
+        for sniffer in self.sniffers:
+            sx = int(sniffer.pos[0] * scale)
+            sy = int(sniffer.pos[1] * scale)
+            sr = max(4, int(8 * scale))
+            pygame.draw.circle(surface, (80, 200, 120), (sx, sy), sr, 2)
+            # Estimated count label
+            if hasattr(self, '_font_sniffer'):
+                ct = self._font_sniffer.render(str(sniffer.estimated_count), True, (80, 200, 120))
+                surface.blit(ct, (sx + sr + 1, sy - ct.get_height() // 2))
 
     def _ensure_fonts(self):
         """Initialise fonts on first draw call (Pygame must already be initialised)."""
