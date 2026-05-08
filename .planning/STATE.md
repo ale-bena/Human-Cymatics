@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-05-08)
 
 **Core value:** Il confronto "realtà vs stima WiFi sniffing" deve essere visivamente convincente e immediatamente comprensibile in 30 secondi
-**Current focus:** Phase 1 — Engine Core
+**Current focus:** Phase 2 — Full Venue + Heatmap
 
 ## Current Position
 
 Phase: 2 of 3 (Full Venue + Heatmap)
-Plan: 0 of TBD in current phase
-Status: Ready — Phase 1 complete, verification passed 12/12
-Last activity: 2026-05-08 — Phase 1 complete: engine running, human-verify approved
+Plan: 0 of 5 in current phase
+Status: Ready to execute — Phase 2 planned, checker passed (2 blockers fixed)
+Last activity: 2026-05-08 — Phase 2 planned: 5 plans in 3 waves, verification passed
 
-Progress: [#####░░░░░] 33% (4/12 plans total)
+Progress: [#####░░░░░] 33% (4/13 plans total, 5 Phase 2 plans ready)
 
 ## Performance Metrics
 
@@ -77,5 +77,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Phase 2 context gathered — dual-panel layout, 3 behaviors, slider timing, viridis heatmap
-Resume file: .planning/phases/02-full-venue-heatmap/02-CONTEXT.md
+Stopped at: Phase 2 planned — 5 plans in 3 waves, checker passed, ready to execute
+Resume file: .planning/phases/02-full-venue-heatmap/02-01-PLAN.md
