@@ -7,6 +7,9 @@
 #   No simulation logic lives here — only the Pygame event loop and clock.
 
 import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pygame
 
 from crowd_mvp.config import FPS, N_PEOPLE, SIM_DURATION, SIGMA_ERROR, WINDOW_TITLE
