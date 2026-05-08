@@ -115,3 +115,65 @@ class GoalAgent(Agent):
     def _pick_random_poi(self):
         """Override: always pick from goal POIs, not all POIs."""
         return self._pick_goal_poi()
+
+
+class SocialAgent(Agent):
+    """Social/clusterer agent (SIM-04, D-07).
+
+    Steers toward the centroid of its K nearest neighbours.
+    Does NOT override update() — call update_social(agents) each frame.
+    Retains random jitter so agents stay dynamic and don't freeze.
+    """
+
+    K_NEIGHBOURS = 10
+
+    def __init__(self, spawn_pos, poi_list, map_size):
+        super().__init__(spawn_pos, poi_list, map_size)
+
+    def update_social(self, agents):
+        """Advance one frame using social steering (D-07).
+
+        Args:
+            agents: full list of Agent-like instances in the simulation.
+                    Self is expected to be in this list.
+
+        Behaviour:
+          1. Collect positions of all other agents.
+          2. Compute Euclidean distances from self.pos.
+          3. Take K nearest (excluding self).
+          4. Steer toward their centroid + random jitter.
+          5. Clamp to map boundary.
+        """
+        # Build position matrix — exclude self
+        others = [a for a in agents if a is not self]
+        if not others:
+            return  # only agent, stay put
+
+        positions = np.array([a.pos for a in others], dtype=np.float32)  # (N-1, 2)
+        diffs = positions - self.pos  # (N-1, 2)
+        dists = np.linalg.norm(diffs, axis=1)  # (N-1,)
+
+        k = min(self.K_NEIGHBOURS, len(others))
+        nearest_idx = np.argpartition(dists, k - 1)[:k]
+        centroid = positions[nearest_idx].mean(axis=0)
+
+        direction = centroid - self.pos
+        dist = np.linalg.norm(direction)
+
+        if dist > 1.0:
+            unit = direction / dist
+            jitter = np.random.uniform(-AGENT_NOISE * 2, AGENT_NOISE * 2, size=2).astype(np.float32)
+            self.vel = unit * AGENT_SPEED * 0.6 + jitter  # slower convergence — D-07 clusters stay tight
+            self.pos += self.vel
+        else:
+            # Arrived at centroid — add jitter only
+            jitter = np.random.uniform(-AGENT_NOISE * 3, AGENT_NOISE * 3, size=2).astype(np.float32)
+            self.pos += jitter
+
+        # Boundary clamp (SIM-05)
+        self.pos[0] = np.clip(self.pos[0], self.radius, self.map_w - self.radius)
+        self.pos[1] = np.clip(self.pos[1], self.radius, self.map_h - self.radius)
+
+
+# Alias for clarity in simulation.py import
+WandererAgent = Agent
