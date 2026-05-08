@@ -220,6 +220,30 @@ class Simulation:
         if self._complete:
             self._draw_completion_overlay(surface, map_w, map_h)
 
+    def draw_map_scaled(self, surface, canvas_w, canvas_h):
+        """Render map geometry only (zones + POI) scaled to fit canvas — no agents or sniffers.
+
+        Used as the underlay for the heatmap right panel.
+        """
+        map_w, map_h = self.map_def['size']
+        scale = min(canvas_w / map_w, canvas_h / map_h)
+
+        surface.fill(COLOUR_BG)
+
+        for zone in self.map_def.get('zones', []):
+            x, y, w, h = zone['rect']
+            scaled_rect = pygame.Rect(int(x * scale), int(y * scale),
+                                      int(w * scale), int(h * scale))
+            pygame.draw.rect(surface, COLOUR_ZONE_FILL, scaled_rect)
+            pygame.draw.rect(surface, COLOUR_ZONE_BORDER, scaled_rect, 1)
+
+        for poi in self.map_def.get('poi', []):
+            px, py = poi['pos']
+            colour = _POI_COLOURS.get(poi['category'], (200, 200, 200))
+            pygame.draw.circle(surface, colour,
+                               (int(px * scale), int(py * scale)),
+                               max(3, int(6 * scale)))
+
     def draw_scaled(self, surface, canvas_w, canvas_h):
         """Render simulation to surface scaled to fit canvas_w x canvas_h (D-05).
 

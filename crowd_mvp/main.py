@@ -287,21 +287,28 @@ def main():
         left_surf = screen.subsurface(LEFT_PANEL_RECT)
         sim.draw_scaled(left_surf, CANVAS_W, CANVAS_H)
 
-        # --- Right panel: KDE heatmap (D-17) ---
+        # --- Right panel: map underlay + KDE heatmap (D-17) ---
         right_surf = screen.subsurface(RIGHT_PANEL_RECT)
-        right_surf.fill(COLOUR_BG)
-        if heatmap_surface is not None:
-            if active_tab == 1:
+        if active_tab == 1:
+            # Layer 1: plain map (zones + POI only, no agents/sniffers)
+            sim.draw_map_scaled(right_surf, CANVAS_W, CANVAS_H)
+
+            # Layer 2: heatmap at 70% opacity blended over the map
+            HEATMAP_ALPHA = 178  # 70% of 255
+            if heatmap_surface is not None:
+                heatmap_surface.set_alpha(HEATMAP_ALPHA)
                 right_surf.blit(heatmap_surface, (0, 0))
-        elif active_tab == 1:
-            # D-14: initial state before first tick — flat deep blue
-            # Pass a single zero-weight point; KDE returns uniform deep blue
-            mw, mh = sim.map_size
-            init_raw = build_heatmap_surface(
-                [(mw // 2, mh // 2)], [0.0], sim.map_size, sigma_kernel=live_sigma_kernel
-            )
-            init_surf = pygame.transform.scale(init_raw, (CANVAS_W, CANVAS_H))
-            right_surf.blit(init_surf, (0, 0))
+            else:
+                # D-14: initial state — flat deep blue before first tick
+                mw, mh = sim.map_size
+                init_raw = build_heatmap_surface(
+                    [(mw // 2, mh // 2)], [0.0], sim.map_size, sigma_kernel=live_sigma_kernel
+                )
+                init_surf = pygame.transform.scale(init_raw, (CANVAS_W, CANVAS_H))
+                init_surf.set_alpha(HEATMAP_ALPHA)
+                right_surf.blit(init_surf, (0, 0))
+        else:
+            right_surf.fill(COLOUR_BG)
 
         # Tab 2/3 placeholder
         if active_tab == 2:
