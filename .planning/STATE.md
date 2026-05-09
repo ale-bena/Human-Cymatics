@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-05-08)
 
 **Core value:** Il confronto "realtà vs stima WiFi sniffing" deve essere visivamente convincente e immediatamente comprensibile in 30 secondi
-**Current focus:** Phase 2 — Full Venue + Heatmap
+**Current focus:** Phase 3 — Analytics + Polish
 
 ## Current Position
 
-Phase: 2 of 3 (Full Venue + Heatmap)
-Plan: 0 of 5 in current phase
-Status: Ready to execute — Phase 2 planned, checker passed (2 blockers fixed)
-Last activity: 2026-05-08 — Phase 2 planned: 5 plans in 3 waves, verification passed
+Phase: 3 of 3 (Analytics + Polish)
+Plan: 0 of TBD in current phase
+Status: Phase 2 complete — ready to discuss/plan Phase 3
+Last activity: 2026-05-08 — Phase 2 executed: all 5 plans complete (02-01 through 02-05)
 
-Progress: [#####░░░░░] 33% (4/13 plans total, 5 Phase 2 plans ready)
+Progress: [##########░] 69% (9/13+ plans total, Phase 3 not yet planned)
 
 ## Performance Metrics
 
@@ -76,6 +76,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-08
-Stopped at: Phase 2 planned — 5 plans in 3 waves, checker passed, ready to execute
-Resume file: .planning/phases/02-full-venue-heatmap/02-01-PLAN.md
+Last session: 2026-05-09
+Stopped at: Phase 3 context gathered — ready to plan
+Resume file: .planning/phases/03-analytics-polish/03-CONTEXT.md
