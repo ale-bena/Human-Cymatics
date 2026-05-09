@@ -19,7 +19,7 @@ from crowd_mvp.config import (
     COLOUR_OVERLAY_BG, COLOUR_TEXT, COLOUR_LABEL,
     FONT_SIZE_LABEL, FONT_SIZE_OVERLAY,
 )
-from crowd_mvp.maps import get_sniffer_positions
+from crowd_mvp.maps import get_sniffer_positions, find_zone_for_point
 from crowd_mvp.people import Agent, GoalAgent, SocialAgent, WandererAgent
 from crowd_mvp.sniffers import Sniffer
 
@@ -113,6 +113,27 @@ class Simulation:
             for s in sniffer_defs
         ]
 
+        # Traffic matrix: accumulated zone-to-zone transition counts (D-05).
+        # Keys: zone_id strings from map_def['zones'].
+        zone_ids = [z['id'] for z in map_def['zones']]
+        self._zone_ids = zone_ids
+        # matrix[i][j] = count of transitions from zone_ids[i] to zone_ids[j]
+        self.traffic_matrix = {zi: {zj: 0 for zj in zone_ids} for zi in zone_ids}
+
+        # Tracked agents subset: randomly select 10-15 agents (D-07).
+        import random as _rnd2
+        n_track = min(len(self.agents), _rnd2.randint(10, 15))
+        self.tracked_agents = _rnd2.sample(self.agents, n_track)
+        for a in self.tracked_agents:
+            a._track = True
+            a.pos_history.append((a.x, a.y))  # seed with initial position
+
+        # Per-agent last-known zone for transition detection (D-05).
+        self._agent_last_zone = {}
+        for a in self.agents:
+            zid = find_zone_for_point(map_def, a.x, a.y)
+            self._agent_last_zone[id(a)] = zid
+
     @property
     def is_complete(self):
         """True after duration has elapsed (SIM-07)."""
@@ -140,6 +161,7 @@ class Simulation:
         # Sniffer tick every ~1 second (D-10, LOOP-02)
         if self.frame_count % SNIFFER_TICK_FRAMES == 0:
             self._tick_sniffers()
+            self._update_traffic_matrix()  # D-05: per-tick is sufficient; matrix only read at tick cadence
 
         self.frame_count += 1
 
@@ -151,6 +173,20 @@ class Simulation:
         """Recount agents per zone and update noisy estimates (LOOP-02)."""
         for sniffer in self.sniffers:
             sniffer.tick(self.agents, self.map_def, self.frame_count)
+
+    def _update_traffic_matrix(self):
+        """Detect agent zone transitions and increment traffic_matrix[from][to] (D-05)."""
+        for agent in self.agents:
+            aid = id(agent)
+            current_zone = find_zone_for_point(self.map_def, agent.x, agent.y)
+            prev_zone = self._agent_last_zone.get(aid)
+            if (current_zone is not None and prev_zone is not None
+                    and current_zone != prev_zone
+                    and current_zone in self.traffic_matrix
+                    and prev_zone in self.traffic_matrix):
+                self.traffic_matrix[prev_zone][current_zone] += 1
+            if current_zone is not None:
+                self._agent_last_zone[aid] = current_zone
 
     def get_heatmap_data(self):
         """Return sniffer positions and estimated counts for heatmap rendering (D-16).

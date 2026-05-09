@@ -37,6 +37,11 @@ class Agent:
         self.dwell_frames = 0
         self.target_pos = self._pick_random_poi()
 
+        # Position history for Tab 3 trajectory rendering (D-07).
+        # Populated only when track=True is passed at construction.
+        self._track = False
+        self.pos_history = []  # list of (x, y) int tuples, appended each frame when tracking
+
     def _pick_random_poi(self):
         """Pick a random POI position from the poi_list."""
         idx = np.random.randint(0, len(self.poi_list))
@@ -56,6 +61,8 @@ class Agent:
             self.dwell_frames -= 1
             if self.dwell_frames == 0:
                 self.target_pos = self._pick_random_poi()
+            if self._track:
+                self.pos_history.append((int(self.pos[0]), int(self.pos[1])))
             return
 
         # Steering toward target (D-01)
@@ -72,6 +79,10 @@ class Agent:
             noise = np.random.uniform(-AGENT_NOISE, AGENT_NOISE, size=2).astype(np.float32)
             self.vel = unit * AGENT_SPEED + noise
             self.pos += self.vel
+
+        # Record position if tracking enabled (D-07)
+        if self._track:
+            self.pos_history.append((int(self.pos[0]), int(self.pos[1])))
 
         # Boundary clamping — keep agent inside map (SIM-05)
         self.pos[0] = np.clip(self.pos[0], self.radius, self.map_w - self.radius)
@@ -173,6 +184,10 @@ class SocialAgent(Agent):
         # Boundary clamp (SIM-05)
         self.pos[0] = np.clip(self.pos[0], self.radius, self.map_w - self.radius)
         self.pos[1] = np.clip(self.pos[1], self.radius, self.map_h - self.radius)
+
+        # Record position if tracking enabled
+        if self._track:
+            self.pos_history.append((int(self.pos[0]), int(self.pos[1])))
 
 
 # Alias for clarity in simulation.py import
