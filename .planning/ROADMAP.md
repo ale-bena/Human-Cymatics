@@ -7,8 +7,8 @@ Three phases over 1-2 days. Phase 1 builds the runnable skeleton: a small map, w
 ## Phases
 
 - [x] **Phase 1: Engine Core** - Runnable simulation with small map, wanderers, sniffer network, 60 FPS render loop
-- [ ] **Phase 2: Full Venue + Heatmap** - All 3 maps, all 3 behaviors, control panel, Tab 1 KDE heatmap
-- [ ] **Phase 3: Analytics + Polish** - Tab 2 comparison, Tab 3 traffic, Start/Pause/Reset, timer, UI polish
+- [x] **Phase 2: Full Venue + Heatmap** - All 3 maps, all 3 behaviors, control panel, Tab 1 KDE heatmap
+- [x] **Phase 3: Analytics + Polish** - Tab 2 comparison, Tab 3 traffic, Start/Pause/Reset, timer, UI polish
 
 ## Phase Details
 
@@ -42,11 +42,11 @@ Plans:
   5. Pressing keys 1 / 2 / 3 or clicking tab buttons switches the active visualisation pane
 **Plans**: 5 plans
 Plans:
-- [ ] 02-01-PLAN.md — Phase 2 config constants + MEDIUM_MAP + LARGE_MAP definitions
-- [ ] 02-02-PLAN.md — GoalAgent and SocialAgent classes (+ WandererAgent alias)
-- [ ] 02-03-PLAN.md — KDE heatmap implementation in viz/heatmap.py (viridis + scipy)
-- [ ] 02-04-PLAN.md — Simulation behavior param + get_heatmap_data() + all-map support
-- [ ] 02-05-PLAN.md — Full main.py rewrite: 1200x520 window, dual panels, tab bar, control panel
+- [x] 02-01-PLAN.md — Phase 2 config constants + MEDIUM_MAP + LARGE_MAP definitions
+- [x] 02-02-PLAN.md — GoalAgent and SocialAgent classes (+ WandererAgent alias)
+- [x] 02-03-PLAN.md — KDE heatmap implementation in viz/heatmap.py (viridis + scipy)
+- [x] 02-04-PLAN.md — Simulation behavior param + get_heatmap_data() + all-map support
+- [x] 02-05-PLAN.md — Full main.py rewrite: 1200x520 window, dual panels, tab bar, control panel
 **UI hint**: yes
 
 ### Phase 3: Analytics + Polish
@@ -61,9 +61,9 @@ Plans:
   5. The overall layout looks clean enough to present to investors without apology — consistent colours, readable labels, no overlapping UI elements
 **Plans**: 3 plans
 Plans:
-- [ ] 03-01-PLAN.md — Tab 2 ground-truth vs estimate dual-panel zone-fill heatmap (VIZ-02)
-- [ ] 03-02-PLAN.md — Tab 3 traffic matrix heatmap + trajectory density-trace offscreen render (VIZ-03)
-- [ ] 03-03-PLAN.md — Start/Pause/Resume button, full-freeze pause, end-overlay (CTR-02, CTR-03, CTR-04)
+- [x] 03-01-PLAN.md — Tab 2 ground-truth vs estimate dual-panel zone-fill heatmap (VIZ-02)
+- [x] 03-02-PLAN.md — Tab 3 traffic matrix heatmap + trajectory density-trace offscreen render (VIZ-03)
+- [x] 03-03-PLAN.md — Start/Pause/Resume button, full-freeze pause, end-overlay (CTR-02, CTR-03, CTR-04)
 **UI hint**: yes
 
 ## Progress
@@ -72,6 +72,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Engine Core | 4/4 | Awaiting human-verify | - |
-| 2. Full Venue + Heatmap | 0/5 | Not started | - |
-| 3. Analytics + Polish | 0/3 | Not started | - |
+| 1. Engine Core | 4/4 | Complete | 2026-05-08 |
+| 2. Full Venue + Heatmap | 5/5 | Complete | 2026-05-08 |
+| 3. Analytics + Polish | 3/3 | Complete | 2026-05-09 |

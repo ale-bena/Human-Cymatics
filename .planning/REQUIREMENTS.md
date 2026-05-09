@@ -95,14 +95,14 @@
 | SNF-03 | Phase 1 | Complete (01-01) |
 | SNF-04 | Phase 1 | Pending |
 | VIZ-01 | Phase 2 | Pending |
-| VIZ-02 | Phase 3 | Pending |
-| VIZ-03 | Phase 3 | Pending |
+| VIZ-02 | Phase 3 | Complete (03-01) |
+| VIZ-03 | Phase 3 | Complete (03-02) |
 | VIZ-04 | Phase 1 | Complete (01-03) |
 | VIZ-05 | Phase 2 | Pending |
 | CTR-01 | Phase 2 | Pending |
-| CTR-02 | Phase 3 | Pending |
-| CTR-03 | Phase 3 | Pending |
-| CTR-04 | Phase 3 | Pending |
+| CTR-02 | Phase 3 | Complete (03-03) |
+| CTR-03 | Phase 3 | Complete (03-03) |
+| CTR-04 | Phase 3 | Partial (03-03) — SIM_DURATION hardcoded, no UI slider |
 | LOOP-01 | Phase 1 | Complete (01-03) |
 | LOOP-02 | Phase 1 | Complete (01-03) |
 

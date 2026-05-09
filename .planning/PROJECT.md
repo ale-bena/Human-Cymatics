@@ -16,16 +16,24 @@ Il confronto "realtà vs stima WiFi sniffing" deve essere visivamente convincent
 - [x] Rete sniffer con stima rumorosa per zona: `max(0, round(count_reale + N(0, σ)))` (SNF-01–SNF-04) — Validated in Phase 1: Engine Core
 - [x] Loop 60 FPS con tick sniffer ogni secondo; pausa automatica a fine simulazione (LOOP-01, LOOP-02, SIM-07) — Validated in Phase 1: Engine Core
 
-### Active
+### Validated (Phase 2)
 
-- [ ] 3 mappe preset selezionabili (small 4 sniffer, medium 8, large 12) con zone rettangolari, POI e sniffer posizionati
-- [ ] Agenti persona con posizione (x,y), velocità e 3 behavior: wanderer, goal-oriented, social/clusterer
-- [ ] Rete sniffer con stima rumorosa per zona: `max(0, round(count_reale + N(0, σ)))`
-- [ ] Tab 1: Heatmap KDE bivariato calcolata dalle stime sniffer, con alpha blending sulla mappa
-- [ ] Tab 2: Confronto ground truth vs stima (split o overlay semitrasparente)
-- [ ] Tab 3: Matrice di traffico accumulata nel tempo + traiettorie subset persone
-- [ ] Pannello di controllo: selezione mappa/behavior, sliders (n_people, σ_error, σ_kernel), Start/Pause/Reset, timer
-- [ ] Loop 60 FPS con tick sniffer ogni secondo; pausa automatica a fine simulazione
+- [x] 3 mappe preset selezionabili (small 4 sniffer, medium 8, large 12) con zone rettangolari, POI e sniffer posizionati — Validated in Phase 2: Full Venue + Heatmap
+- [x] Agenti persona con posizione (x,y), velocità e 3 behavior: wanderer, goal-oriented, social/clusterer — Validated in Phase 2: Full Venue + Heatmap
+- [x] Tab 1: Heatmap KDE bivariato calcolata dalle stime sniffer, con alpha blending sulla mappa — Validated in Phase 2: Full Venue + Heatmap
+- [x] Pannello di controllo: selezione mappa/behavior, sliders (n_people, σ_error, σ_kernel) — Validated in Phase 2: Full Venue + Heatmap
+
+### Validated (Phase 3)
+
+- [x] Tab 2: Confronto ground truth vs stima — dual-panel viridis zone-fill, shared normalisation — Validated in Phase 3: Analytics + Polish
+- [x] Tab 3: Matrice di traffico (plasma) + traiettorie light-painting per subset agenti — Validated in Phase 3: Analytics + Polish
+- [x] Start/Pause/Resume toggle, timer display elapsed/total, end-of-sim overlay at 300 s — Validated in Phase 3: Analytics + Polish
+
+### Active (known gaps)
+
+- [ ] CTR-04: Slider durata simulazione — hardcodato a 300 s, nessun controllo UI
+- [ ] CR-01: Traffic panel surfaces mancanti di SRCALPHA flag — effetto light-painting non funziona correttamente
+- [ ] CR-02: pos_history illimitata — FPS collapse entro fine demo 300 s
 
 ### Out of Scope
 
@@ -91,4 +99,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-08 — Phase 1 complete (Engine Core verified 12/12)*
+*Last updated: 2026-05-09 — Phase 3 complete (all 3 phases done, 12/12 plans, MVP pitch-ready)*
