@@ -1,0 +1,6 @@
+[build]
+  command   = "pip install pygbag && python -m pygbag --build ."
+  publish   = "build/web"
+
+[build.environment]
+  PYTHON_VERSION = "3.11"

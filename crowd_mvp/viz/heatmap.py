@@ -74,41 +74,37 @@ def build_heatmap_surface(sniffer_positions, sniffer_counts, map_size, sigma_ker
 
 
 def _compute_density(sniffer_positions, sniffer_counts, map_w, map_h, sigma_kernel):
-    """Evaluate gaussian_kde on a GRID_W x GRID_H grid.
+    """Evaluate a weighted 2-D Gaussian KDE on a GRID_W x GRID_H grid.
+
+    Pure NumPy implementation — no scipy dependency, runs in WASM/browser.
+    Mathematically: density(x,y) = sum_i( w_i * exp(-((x-xi)^2+(y-yi)^2) / (2*sigma^2)) )
 
     Returns:
         np.ndarray of shape (GRID_H, GRID_W) float64
     """
+    weights = np.array(sniffer_counts, dtype=np.float64)
+    weights = np.maximum(weights, 0.0)
+
+    if weights.sum() < 1e-6 or len(sniffer_positions) < 2:
+        # D-14: no data yet — return zeros (renders as flat deep blue)
+        return np.zeros((_GRID_H, _GRID_W), dtype=np.float64)
+
+    positions = np.array(sniffer_positions, dtype=np.float64).T  # (2, N)
+
     # Grid of evaluation points in native map coordinates
     xs = np.linspace(0, map_w, _GRID_W)
     ys = np.linspace(0, map_h, _GRID_H)
     grid_x, grid_y = np.meshgrid(xs, ys)            # each (GRID_H, GRID_W)
-    grid_pts = np.vstack([grid_x.ravel(), grid_y.ravel()])  # (2, GRID_H*GRID_W)
+    gx = grid_x.ravel()                              # (M,)
+    gy = grid_y.ravel()                              # (M,)
 
-    # Weights: use counts; ensure at least 1 so KDE doesn't crash
-    weights = np.array(sniffer_counts, dtype=np.float64)
-    weights = np.maximum(weights, 0.0)
-    total_weight = weights.sum()
+    # Squared distances: (N, M) via broadcasting
+    dx = gx[np.newaxis, :] - positions[0, :, np.newaxis]   # (N, M)
+    dy = gy[np.newaxis, :] - positions[1, :, np.newaxis]   # (N, M)
+    sq_dist = dx ** 2 + dy ** 2                             # (N, M)
 
-    if total_weight < 1e-6 or len(sniffer_positions) < 2:
-        # D-14: no data yet — return zeros (renders as flat deep blue)
-        return np.zeros((_GRID_H, _GRID_W), dtype=np.float64)
+    # Weighted Gaussian kernels summed across sniffers
+    kernels = np.exp(-sq_dist / (2.0 * sigma_kernel ** 2))        # (N, M)
+    density = (weights[:, np.newaxis] * kernels).sum(axis=0)      # (M,)
 
-    positions = np.array(sniffer_positions, dtype=np.float64).T  # (2, N_sniffers)
-
-    # sigma_kernel is in native map pixels. Convert to KDE bandwidth factor:
-    # gaussian_kde bw_method='silverman' uses N^(-1/6) * std as bandwidth.
-    # To use a fixed pixel sigma, set bw_method = sigma_pixel / std(data).
-    std_x = positions[0].std() if positions[0].std() > 1e-6 else 1.0
-    std_y = positions[1].std() if positions[1].std() > 1e-6 else 1.0
-    bw = sigma_kernel / max(std_x, std_y)
-
-    try:
-        from scipy.stats import gaussian_kde
-        kde = gaussian_kde(positions, bw_method=bw, weights=weights)
-        density = kde(grid_pts).reshape(_GRID_H, _GRID_W)
-    except Exception:
-        # Fallback: zero grid (D-14 graceful degradation)
-        density = np.zeros((_GRID_H, _GRID_W), dtype=np.float64)
-
-    return density
+    return density.reshape(_GRID_H, _GRID_W)
