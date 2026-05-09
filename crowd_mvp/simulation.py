@@ -166,6 +166,17 @@ class Simulation:
         counts = [float(s.estimated_count) for s in self.sniffers]
         return positions, counts
 
+    def get_zone_counts(self):
+        """Return real and estimated agent counts keyed by zone_id (D-01, D-04).
+
+        Returns:
+            real_counts:      dict[zone_id -> int]  — ground truth from sniffers
+            estimated_counts: dict[zone_id -> int]  — noisy sniffer estimates
+        """
+        real_counts      = {s.zone_id: s.real_count      for s in self.sniffers}
+        estimated_counts = {s.zone_id: s.estimated_count for s in self.sniffers}
+        return real_counts, estimated_counts
+
     @property
     def map_size(self):
         """Native map size (width, height) in pixels."""
