@@ -153,6 +153,9 @@ def main():
     compare_real_counts = {}
     compare_est_counts  = {}
 
+    # Playback state (D-09: auto-starts running)
+    paused = False
+
     # --- Slider drag state ---
     dragging = None   # None | 'n_people' | 'sigma_error' | 'sigma_kernel'
 
@@ -183,8 +186,9 @@ def main():
     sl_sigma_error = pygame.Rect(490, cp_top + 20, SL_W, SL_H)
     sl_sigma_kernel= pygame.Rect(750, cp_top + 20, SL_W, SL_H)
 
-    # Reset button
-    reset_rect = pygame.Rect(1110, cp_top + 16, 70, 26)
+    # Pause/Resume and Reset buttons (D-11: Pause left of Reset, same row)
+    pause_rect  = pygame.Rect(1002, cp_top + 16, 70, 26)
+    reset_rect  = pygame.Rect(1080, cp_top + 16, 70, 26)
 
     running = True
     while running:
@@ -228,6 +232,14 @@ def main():
                     sim = build_sim()
                     heatmap_surface = None
                     traffic_panels_cache = None
+                    compare_real_counts = {}
+                    compare_est_counts  = {}
+                    paused = False
+
+                # Pause / Resume button (D-09, D-10, D-11)
+                if pause_rect.collidepoint(mx, my):
+                    if not sim.is_complete:
+                        paused = not paused
 
                 # Slider click-to-set + begin drag
                 if sl_n_people.collidepoint(mx, my):
@@ -273,10 +285,11 @@ def main():
         # ----------------------------------------------------------------
         # Simulation update (every frame)
         # ----------------------------------------------------------------
-        sim.update()
+        if not paused:
+            sim.update()
 
-        # Heatmap rebuild every sniffer tick — same cadence as sniffers (D-15)
-        if sim.frame_count % 60 == 0:
+        # Heatmap rebuild every sniffer tick — skip while paused (D-10)
+        if not paused and sim.frame_count % 60 == 0:
             # Use actual agent positions as KDE input so the heatmap shows real
             # crowd density: flow corridors between POIs, central zones with high
             # footfall, and any natural clustering — not just fixed sniffer blobs.
@@ -408,6 +421,13 @@ def main():
         # Reset button
         draw_button(screen, font_ui, reset_rect, "Reset", False,
                     (200, 80, 60), (200, 80, 60))
+
+        # Pause / Resume button (D-11: left of Reset, same row)
+        pause_label = "Resume" if paused else "Pause"
+        pause_active_col = (200, 140, 40)   # amber when paused (visual cue)
+        pause_inactive_col = (60, 120, 200)  # blue when running
+        draw_button(screen, font_ui, pause_rect, pause_label,
+                    paused, pause_active_col, pause_inactive_col)
 
         # --- Status bar ---
         pygame.draw.rect(screen, (190, 190, 190), STATUS_RECT)
