@@ -24,6 +24,7 @@ from crowd_mvp.config import (
 from crowd_mvp.maps import SMALL_MAP, MEDIUM_MAP, LARGE_MAP, ALL_MAPS
 from crowd_mvp.simulation import Simulation
 from crowd_mvp.viz.heatmap import build_heatmap_surface
+from crowd_mvp.viz.compare import build_compare_panels
 
 
 # ---------------------------------------------------------------------------
@@ -143,6 +144,10 @@ def main():
 
     # Heatmap surface — updated every sniffer tick (D-15)
     heatmap_surface = None
+
+    # Tab 2 compare state — updated every sniffer tick (D-04)
+    compare_real_counts = {}
+    compare_est_counts  = {}
 
     # --- Slider drag state ---
     dragging = None   # None | 'n_people' | 'sigma_error' | 'sigma_kernel'
@@ -278,6 +283,9 @@ def main():
             )
             heatmap_surface = pygame.transform.scale(raw_heatmap, (CANVAS_W, CANVAS_H))
 
+            # Update Tab 2 data on same sniffer tick cadence (D-04)
+            compare_real_counts, compare_est_counts = sim.get_zone_counts()
+
         # ----------------------------------------------------------------
         # Draw
         # ----------------------------------------------------------------
@@ -310,18 +318,26 @@ def main():
         else:
             right_surf.fill(COLOUR_BG)
 
-        # Tab 2/3 placeholder
+        # Tab 2/3 content
         if active_tab == 2:
-            right_surf.fill((50, 50, 60))
-            ph = font_tab.render("Tab 2 — Ground Truth Comparison (Phase 3)", True, (180, 180, 180))
-            right_surf.blit(ph, (CANVAS_W // 2 - ph.get_width() // 2, CANVAS_H // 2))
-            left_surf.fill((50, 50, 60))
-            ph2 = font_tab.render("Phase 3 →", True, (180, 180, 180))
-            left_surf.blit(ph2, (CANVAS_W // 2 - ph2.get_width() // 2, CANVAS_H // 2))
+            build_compare_panels(
+                left_surf, right_surf,
+                sim.map_def,
+                compare_real_counts,
+                compare_est_counts,
+                sim.agents,
+                CANVAS_W, CANVAS_H,
+                font_ui,
+            )
+            # Panel column headers (drawn after panels so they appear on top)
+            hdr_font = font_tab
+            hdr_real = hdr_font.render("Ground Truth", True, (220, 220, 220))
+            hdr_est  = hdr_font.render("WiFi Estimate", True, (220, 220, 220))
+            left_surf.blit(hdr_real, (CANVAS_W // 2 - hdr_real.get_width() // 2, 4))
+            right_surf.blit(hdr_est,  (CANVAS_W // 2 - hdr_est.get_width()  // 2, 4))
         elif active_tab == 3:
+            # Tab 3 stub — replaced in 03-02-PLAN
             right_surf.fill((40, 40, 55))
-            ph = font_tab.render("Tab 3 — Traffic Matrix (Phase 3)", True, (180, 180, 180))
-            right_surf.blit(ph, (CANVAS_W // 2 - ph.get_width() // 2, CANVAS_H // 2))
             left_surf.fill((40, 40, 55))
 
         # --- Tab bar (D-04) ---
