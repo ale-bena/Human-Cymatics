@@ -59,7 +59,11 @@ Plans:
   3. Start / Pause / Reset buttons work correctly: Pause freezes movement, Reset returns to initial state with current settings
   4. The timer display shows elapsed / total time and counts down accurately
   5. The overall layout looks clean enough to present to investors without apology — consistent colours, readable labels, no overlapping UI elements
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 03-01-PLAN.md — Tab 2 ground-truth vs estimate dual-panel zone-fill heatmap (VIZ-02)
+- [ ] 03-02-PLAN.md — Tab 3 traffic matrix heatmap + trajectory density-trace offscreen render (VIZ-03)
+- [ ] 03-03-PLAN.md — Start/Pause/Resume button, full-freeze pause, end-overlay (CTR-02, CTR-03, CTR-04)
 **UI hint**: yes
 
 ## Progress
@@ -70,4 +74,4 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Engine Core | 4/4 | Awaiting human-verify | - |
 | 2. Full Venue + Heatmap | 0/5 | Not started | - |
-| 3. Analytics + Polish | 0/TBD | Not started | - |
+| 3. Analytics + Polish | 0/3 | Not started | - |
