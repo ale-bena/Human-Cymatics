@@ -92,6 +92,34 @@ def slider_value_from_x(mx, rect, vmin, vmax):
 
 
 # ---------------------------------------------------------------------------
+# End-of-simulation overlay helper (D-13)
+# ---------------------------------------------------------------------------
+
+def _draw_end_overlay(screen, font, canvas_w, canvas_h):
+    """Semi-transparent overlay over the dual-panel area (left + right) at sim end (D-13).
+
+    The overlay covers x=0..WINDOW_W, y=0..CANVAS_H (both panels only).
+    Uses SRCALPHA so the last data frame remains visible beneath the dim.
+    Message centred on the full dual-panel area.
+    """
+    from crowd_mvp.config import WINDOW_W, COLOUR_OVERLAY_BG
+    overlay = pygame.Surface((WINDOW_W, canvas_h), pygame.SRCALPHA)
+    # COLOUR_OVERLAY_BG is (20, 20, 20, 180) — semi-transparent dark
+    overlay.fill(COLOUR_OVERLAY_BG)
+    screen.blit(overlay, (0, 0))
+
+    # Centred message
+    msg_font = pygame.font.SysFont(None, 28)
+    line1 = msg_font.render("Simulation complete", True, (240, 240, 240))
+    line2 = msg_font.render("press Reset to restart", True, (180, 200, 180))
+    total_h = line1.get_height() + 6 + line2.get_height()
+    cx = WINDOW_W // 2
+    cy = canvas_h // 2
+    screen.blit(line1, (cx - line1.get_width() // 2, cy - total_h // 2))
+    screen.blit(line2, (cx - line2.get_width() // 2, cy - total_h // 2 + line1.get_height() + 6))
+
+
+# ---------------------------------------------------------------------------
 # Scale transform helper (D-05)
 # ---------------------------------------------------------------------------
 
@@ -370,6 +398,10 @@ def main():
             else:
                 left_surf.fill((20, 20, 30))
                 right_surf.fill((20, 20, 30))
+
+        # End-of-simulation overlay over both panels (D-13)
+        if sim.is_complete:
+            _draw_end_overlay(screen, font_tab, CANVAS_W, CANVAS_H)
 
         # --- Tab bar (D-04) ---
         pygame.draw.rect(screen, (200, 200, 200), TAB_BAR_RECT)
