@@ -25,6 +25,7 @@ from crowd_mvp.maps import SMALL_MAP, MEDIUM_MAP, LARGE_MAP, ALL_MAPS
 from crowd_mvp.simulation import Simulation
 from crowd_mvp.viz.heatmap import build_heatmap_surface
 from crowd_mvp.viz.compare import build_compare_panels
+from crowd_mvp.viz.traffic import build_traffic_panels
 
 
 # ---------------------------------------------------------------------------
@@ -145,6 +146,9 @@ def main():
     # Heatmap surface — updated every sniffer tick (D-15)
     heatmap_surface = None
 
+    # Tab 3 traffic panels cache — rebuilt every sniffer tick, blitted each frame (D-08 perf fix)
+    traffic_panels_cache = None   # tuple (left_surf, right_surf) rebuilt on sniffer tick
+
     # Tab 2 compare state — updated every sniffer tick (D-04)
     compare_real_counts = {}
     compare_est_counts  = {}
@@ -223,6 +227,7 @@ def main():
                 if reset_rect.collidepoint(mx, my):
                     sim = build_sim()
                     heatmap_surface = None
+                    traffic_panels_cache = None
 
                 # Slider click-to-set + begin drag
                 if sl_n_people.collidepoint(mx, my):
@@ -286,6 +291,16 @@ def main():
             # Update Tab 2 data on same sniffer tick cadence (D-04)
             compare_real_counts, compare_est_counts = sim.get_zone_counts()
 
+            # Cache Tab 3 panels — rebuild every tick, not every frame (D-08 performance fix)
+            traffic_left  = pygame.Surface((CANVAS_W, CANVAS_H))
+            traffic_right = pygame.Surface((CANVAS_W, CANVAS_H))
+            build_traffic_panels(
+                traffic_left, traffic_right,
+                sim.map_def, sim.traffic_matrix, sim.tracked_agents,
+                CANVAS_W, CANVAS_H, font_ui,
+            )
+            traffic_panels_cache = (traffic_left, traffic_right)
+
         # ----------------------------------------------------------------
         # Draw
         # ----------------------------------------------------------------
@@ -336,9 +351,12 @@ def main():
             left_surf.blit(hdr_real, (CANVAS_W // 2 - hdr_real.get_width() // 2, 4))
             right_surf.blit(hdr_est,  (CANVAS_W // 2 - hdr_est.get_width()  // 2, 4))
         elif active_tab == 3:
-            # Tab 3 stub — replaced in 03-02-PLAN
-            right_surf.fill((40, 40, 55))
-            left_surf.fill((40, 40, 55))
+            if traffic_panels_cache is not None:
+                left_surf.blit(traffic_panels_cache[0], (0, 0))
+                right_surf.blit(traffic_panels_cache[1], (0, 0))
+            else:
+                left_surf.fill((20, 20, 30))
+                right_surf.fill((20, 20, 30))
 
         # --- Tab bar (D-04) ---
         pygame.draw.rect(screen, (200, 200, 200), TAB_BAR_RECT)
