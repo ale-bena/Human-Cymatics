@@ -13,15 +13,12 @@
 
 import numpy as np
 import pygame
-from matplotlib import colormaps
+from crowd_mvp.viz.colormaps import VIRIDIS as _VIRIDIS
 
 
 # Internal grid resolution. Lower = faster; 60x40 is plenty for sniffer-count KDE.
 _GRID_W = 60
 _GRID_H = 40
-
-# Viridis colormap — looked up once at import time
-_VIRIDIS = colormaps['viridis']
 
 
 def build_heatmap_surface(sniffer_positions, sniffer_counts, map_size, sigma_kernel=20.0):
@@ -50,14 +47,15 @@ def build_heatmap_surface(sniffer_positions, sniffer_counts, map_size, sigma_ker
         # All-zeros case (D-14): uniform minimum → deep blue
         normed = np.zeros_like(density)
 
-    # Step 3 — Apply viridis: normed is (GRID_H, GRID_W) float → RGBA uint8
-    rgba_small = (_VIRIDIS(normed) * 255).astype(np.uint8)  # (GRID_H, GRID_W, 4)
+    # Step 3 — Apply viridis via LUT: normed float → RGB uint8
+    indices = (np.clip(normed, 0.0, 1.0) * 255).astype(np.int32)  # (GRID_H, GRID_W)
+    rgb_small = _VIRIDIS._lut[indices]                             # (GRID_H, GRID_W, 3)
 
     # Step 4 — Upscale to map_size via numpy (no scipy/PIL dependency)
     scale_x = map_w // _GRID_W
     scale_y = map_h // _GRID_H
     # Use np.repeat for integer upscale; crop to exact map_size
-    rgb_up = rgba_small[:, :, :3]                        # (GRID_H, GRID_W, 3)
+    rgb_up = rgb_small                                    # (GRID_H, GRID_W, 3)
     rgb_up = np.repeat(rgb_up, scale_y, axis=0)          # (GRID_H*scale_y, GRID_W, 3)
     rgb_up = np.repeat(rgb_up, scale_x, axis=1)          # (GRID_H*scale_y, GRID_W*scale_x, 3)
     # Crop/pad to exact map_size

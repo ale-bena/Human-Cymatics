@@ -10,10 +10,7 @@
 
 import pygame
 import numpy as np
-from matplotlib import colormaps
-
-_PLASMA  = colormaps['plasma']
-_VIRIDIS = colormaps['viridis']
+from crowd_mvp.viz.colormaps import PLASMA as _PLASMA
 
 # Cell size in pixels for the matrix grid (left panel)
 _CELL = 40
@@ -81,8 +78,8 @@ def _draw_matrix_panel(surface, traffic_matrix, map_def, canvas_w, canvas_h, fon
     for i, zi in enumerate(zone_ids):
         for j, zj in enumerate(zone_ids):
             val = normed[i, j]
-            r, g, b, _ = _PLASMA(val)
-            col = (int(r * 255), int(g * 255), int(b * 255))
+            r, g, b = _PLASMA(val)
+            col = (r, g, b)
             rect = pygame.Rect(margin + j * cell, margin + i * cell, cell - 1, cell - 1)
             pygame.draw.rect(surface, col, rect)
 
