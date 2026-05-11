@@ -24,6 +24,16 @@ _GRID_H = 40
 _VIRIDIS = colormaps['viridis']
 
 
+def compute_density_grid(positions, weights, map_size, sigma_kernel=20.0):
+    """Return raw density grid (GRID_H x GRID_W) as a numpy float64 array.
+
+    Same pipeline as build_heatmap_surface but skips colourmap and surface
+    conversion — used by Tab 4 to accumulate density over time.
+    """
+    map_w, map_h = map_size
+    return _compute_density(positions, weights, map_w, map_h, sigma_kernel)
+
+
 def build_heatmap_surface(sniffer_positions, sniffer_counts, map_size, sigma_kernel=20.0):
     """Build a pygame.Surface KDE heatmap from sniffer estimated counts.
 
