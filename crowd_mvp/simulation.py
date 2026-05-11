@@ -6,7 +6,9 @@
 # SIM-07: after duration seconds, sim stops updating and shows "Simulation complete".
 
 import math
+import os
 
+import numpy as np
 import pygame
 
 from crowd_mvp.config import (
@@ -275,13 +277,38 @@ class Simulation:
         map_w, map_h = self.map_def['size']
         scale = min(canvas_w / map_w, canvas_h / map_h)
 
-        surface.fill(COLOUR_BG)
+        self._ensure_fonts()
+
+        bg_image_path = self.map_def.get('bg_image')
+        bg_drawn = False
+        if bg_image_path:
+            scaled_w, scaled_h = int(map_w * scale), int(map_h * scale)
+            cache_key = (bg_image_path, scaled_w, scaled_h)
+            if not hasattr(self, '_bg_cache_key') or self._bg_cache_key != cache_key:
+                try:
+                    raw = pygame.image.load(bg_image_path).convert()
+                    self._bg_cache = pygame.transform.smoothscale(raw, (scaled_w, scaled_h))
+                except Exception:
+                    self._bg_cache = None
+                self._bg_cache_key = cache_key
+            if self._bg_cache is not None:
+                surface.fill(self.map_def.get('bg_colour', (245, 244, 240)))
+                surface.blit(self._bg_cache, (0, 0))
+                bg_drawn = True
+        if not bg_drawn:
+            surface.fill(COLOUR_BG)
 
         for zone in self.map_def.get('zones', []):
             x, y, w, h = zone['rect']
             scaled_rect = pygame.Rect(int(x * scale), int(y * scale),
-                                      int(w * scale), int(h * scale))
-            pygame.draw.rect(surface, COLOUR_ZONE_FILL, scaled_rect)
+                                      max(1, int(w * scale)), max(1, int(h * scale)))
+            colour = zone.get('colour', COLOUR_ZONE_FILL)
+            if len(colour) == 4:
+                zone_surf = pygame.Surface((scaled_rect.width, scaled_rect.height), pygame.SRCALPHA)
+                zone_surf.fill(colour)
+                surface.blit(zone_surf, (scaled_rect.x, scaled_rect.y))
+            else:
+                pygame.draw.rect(surface, colour, scaled_rect)
             pygame.draw.rect(surface, COLOUR_ZONE_BORDER, scaled_rect, 1)
 
         for poi in self.map_def.get('poi', []):
@@ -307,31 +334,55 @@ class Simulation:
         map_w, map_h = self.map_def['size']
         scale = min(canvas_w / map_w, canvas_h / map_h)
 
-        # Background
-        surface.fill(self.map_def.get('bg_colour', (30, 30, 30)))
+        self._ensure_fonts()
 
-        # Zones
+        # Background: image if present, else solid colour
+        bg_image_path = self.map_def.get('bg_image')
+        bg_drawn = False
+        if bg_image_path:
+            scaled_w, scaled_h = int(map_w * scale), int(map_h * scale)
+            cache_key = (bg_image_path, scaled_w, scaled_h)
+            if not hasattr(self, '_bg_cache_key') or self._bg_cache_key != cache_key:
+                try:
+                    raw = pygame.image.load(bg_image_path).convert()
+                    self._bg_cache = pygame.transform.smoothscale(raw, (scaled_w, scaled_h))
+                except Exception:
+                    self._bg_cache = None
+                self._bg_cache_key = cache_key
+            if self._bg_cache is not None:
+                surface.fill(self.map_def.get('bg_colour', (245, 244, 240)))
+                surface.blit(self._bg_cache, (0, 0))
+                bg_drawn = True
+        if not bg_drawn:
+            surface.fill(self.map_def.get('bg_colour', (30, 30, 30)))
+
+        # Zones — support RGBA colours via alpha blit
         for zone in self.map_def.get('zones', []):
             x, y, w, h = zone['rect']
             scaled_rect = pygame.Rect(
                 int(x * scale), int(y * scale),
-                int(w * scale), int(h * scale),
+                max(1, int(w * scale)), max(1, int(h * scale)),
             )
             colour = zone.get('colour', (60, 60, 80))
-            pygame.draw.rect(surface, colour, scaled_rect)
-            pygame.draw.rect(surface, (100, 100, 120), scaled_rect, 1)
+            if len(colour) == 4:
+                zone_surf = pygame.Surface((scaled_rect.width, scaled_rect.height), pygame.SRCALPHA)
+                zone_surf.fill(colour)
+                surface.blit(zone_surf, (scaled_rect.x, scaled_rect.y))
+            else:
+                pygame.draw.rect(surface, colour, scaled_rect)
+            pygame.draw.rect(surface, (100, 100, 120, 180), scaled_rect, 1)
 
-            # Zone label (optional)
             label = zone.get('label')
-            if label and hasattr(self, '_font_zone'):
-                txt = self._font_zone.render(label, True, (200, 200, 200))
+            if label:
+                txt = self._font_zone.render(label, True, (240, 240, 240))
                 surface.blit(txt, (scaled_rect.x + 2, scaled_rect.y + 2))
 
         # POI markers
         for poi in self.map_def.get('pois', self.map_def.get('poi', [])):
             px, py = poi['pos']
+            colour = _POI_COLOURS.get(poi.get('category', ''), (255, 220, 50))
             pygame.draw.circle(
-                surface, (255, 220, 50),
+                surface, colour,
                 (int(px * scale), int(py * scale)),
                 max(3, int(6 * scale)),
             )
@@ -349,10 +400,8 @@ class Simulation:
             sy = int(sniffer.pos[1] * scale)
             sr = max(4, int(8 * scale))
             pygame.draw.circle(surface, (80, 200, 120), (sx, sy), sr, 2)
-            # Estimated count label
-            if hasattr(self, '_font_sniffer'):
-                ct = self._font_sniffer.render(str(sniffer.estimated_count), True, (80, 200, 120))
-                surface.blit(ct, (sx + sr + 1, sy - ct.get_height() // 2))
+            ct = self._font_sniffer.render(str(sniffer.estimated_count), True, (80, 200, 120))
+            surface.blit(ct, (sx + sr + 1, sy - ct.get_height() // 2))
 
     def _ensure_fonts(self):
         """Initialise fonts on first draw call (Pygame must already be initialised)."""
@@ -360,6 +409,10 @@ class Simulation:
             self._font_label = pygame.font.SysFont(None, FONT_SIZE_LABEL)
         if self._font_overlay is None:
             self._font_overlay = pygame.font.SysFont(None, FONT_SIZE_OVERLAY)
+        if not hasattr(self, '_font_zone'):
+            self._font_zone = pygame.font.SysFont(None, 14)
+        if not hasattr(self, '_font_sniffer'):
+            self._font_sniffer = pygame.font.SysFont(None, 13)
 
     def _draw_sniffer(self, surface, sniffer):
         """Draw WiFi arc icon + count label for one sniffer (D-06, D-07, VIZ-04).

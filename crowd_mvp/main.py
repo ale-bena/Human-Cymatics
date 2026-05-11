@@ -200,27 +200,29 @@ def main():
     cp_top = CANVAS_H + TAB_BAR_H   # absolute y of control panel top
     cp_mid = cp_top + CONTROL_PANEL_H // 2
 
-    # Map buttons [S][M][L] — left group
+    # Map buttons [S][M][L][4] — left group
     map_btn_rects = {
         'S': pygame.Rect(10,  cp_top + 8, 28, 22),
         'M': pygame.Rect(42,  cp_top + 8, 28, 22),
         'L': pygame.Rect(74,  cp_top + 8, 28, 22),
+        '4': pygame.Rect(106, cp_top + 8, 28, 22),
     }
+    map_btn_labels = {'S': 'S', 'M': 'M', 'L': 'L', '4': 'V'}
     map_label_rect = pygame.Rect(10, cp_top + 2, 60, 12)
 
-    # Behavior buttons [W][G][C]
+    # Behavior buttons [W][G][C] — shifted right to make room for '4' button
     beh_btn_rects = {
-        'wanderer': pygame.Rect(122, cp_top + 8, 28, 22),
-        'goal':     pygame.Rect(154, cp_top + 8, 28, 22),
-        'social':   pygame.Rect(186, cp_top + 8, 28, 22),
+        'wanderer': pygame.Rect(158, cp_top + 8, 28, 22),
+        'goal':     pygame.Rect(190, cp_top + 8, 28, 22),
+        'social':   pygame.Rect(222, cp_top + 8, 28, 22),
     }
 
-    # Sliders — horizontal layout in remaining 1200 - 220 - 80 = 900px, split 3 ways
-    SL_W = 240   # slider widget width
+    # Sliders — start at 265 (after V button ends at 250), end before pause at 1002
+    SL_W = 230   # slider widget width
     SL_H = 35    # widget height (label row + track row)
-    sl_n_people    = pygame.Rect(230, cp_top + 20, SL_W, SL_H)
-    sl_sigma_error = pygame.Rect(490, cp_top + 20, SL_W, SL_H)
-    sl_sigma_kernel= pygame.Rect(750, cp_top + 20, SL_W, SL_H)
+    sl_n_people    = pygame.Rect(265, cp_top + 20, SL_W, SL_H)
+    sl_sigma_error = pygame.Rect(510, cp_top + 20, SL_W, SL_H)
+    sl_sigma_kernel= pygame.Rect(755, cp_top + 20, SL_W, SL_H)
 
     # Pause/Resume and Reset buttons (D-11: Pause left of Reset, same row)
     pause_rect  = pygame.Rect(1002, cp_top + 16, 70, 26)
@@ -496,12 +498,12 @@ def main():
 
         # Map buttons
         for key, rect in map_btn_rects.items():
-            draw_button(screen, font_ui, rect, key, staged_map_key == key,
+            draw_button(screen, font_ui, rect, map_btn_labels[key], staged_map_key == key,
                         COLOUR_BTN_ACTIVE, COLOUR_BTN_INACTIVE)
 
         # Behavior label
         bl = font_ui.render("Behavior:", True, COLOUR_LABEL)
-        screen.blit(bl, (118, cp_top + 2))
+        screen.blit(bl, (154, cp_top + 2))
 
         # Behavior buttons
         beh_labels = {'wanderer': 'W', 'goal': 'G', 'social': 'C'}
