@@ -94,6 +94,14 @@ def _snapshot() -> dict:
             for s in sim.sniffers
         ]
         traffic = {k: dict(v) for k, v in sim.traffic_matrix.items()}
+        # Tracked agent trajectories — last 400 positions sampled every 2 frames
+        trajectories = []
+        for a in sim.tracked_agents:
+            hist = list(a.pos_history)[-400::2]
+            if len(hist) >= 2:
+                trajectories.append(
+                    [[round(float(x), 1), round(float(y), 1)] for x, y in hist]
+                )
         return {
             'frame':        sim.frame_count,
             'elapsed':      round(sim.frame_count / FPS, 1),
@@ -112,6 +120,7 @@ def _snapshot() -> dict:
             'agents':       agents,
             'sniffers':     sniffers,
             'traffic':      traffic,
+            'trajectories': trajectories,
         }
 
 
@@ -186,8 +195,6 @@ async def ws_endpoint(ws: WebSocket):
 # ── Entry point ──────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8765))
-    host = '0.0.0.0' if os.environ.get('PORT') else '127.0.0.1'
-    print(f'\n  Human Cymatics — Crowd Intelligence Dashboard')
-    print(f'  → http://{host}:{port}\n')
-    uvicorn.run(app, host=host, port=port, log_level='warning')
+    print('\n  Human Cymatics — Crowd Intelligence Dashboard')
+    print('  → http://127.0.0.1:8765\n')
+    uvicorn.run(app, host='127.0.0.1', port=8765, log_level='warning')

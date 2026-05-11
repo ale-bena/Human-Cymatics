@@ -6,180 +6,118 @@
 <title>Human Cymatics — Crowd Intelligence</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
 :root {
-  --bg:      #0d1117;
-  --panel:   #161b22;
-  --border:  #30363d;
-  --text:    #e6edf3;
-  --muted:   #8b949e;
-  --blue:    #388bfd;
-  --green:   #3fb950;
-  --amber:   #d29922;
-  --red:     #f85149;
-  --cyan:    #39c5cf;
-  --purple:  #bc8cff;
+  --bg:    #0d1117; --panel: #161b22; --border: #30363d;
+  --text:  #e6edf3; --muted: #8b949e;
+  --blue:  #388bfd; --green: #3fb950; --amber: #d29922;
+  --red:   #f85149; --cyan:  #39c5cf; --purple:#bc8cff;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  font-size: 13px;
+  background:var(--bg); color:var(--text);
+  font-family:'SF Mono','Fira Code','Consolas',monospace;
+  height:100vh; overflow:hidden;
+  display:flex; flex-direction:column; font-size:13px;
 }
-
-/* ── Panels ── */
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-
-/* ── KPI Cards ── */
-.kpi {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 12px;
-}
-.kpi-val  { font-size: 1.9rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
-.kpi-lbl  { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-top: 2px; }
-
-/* ── Section headers ── */
+.panel { background:var(--panel); border:1px solid var(--border); border-radius:6px; }
+.kpi   { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px 12px; }
+.kpi-val { font-size:1.85rem; font-weight:700; line-height:1.1; letter-spacing:-.02em; }
+.kpi-lbl { font-size:.6rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-top:2px; }
 .sec-hdr {
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--muted);
-  padding-bottom: 5px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 7px;
+  font-size:.6rem; text-transform:uppercase; letter-spacing:.12em;
+  color:var(--muted); padding-bottom:5px; border-bottom:1px solid var(--border); margin-bottom:7px;
+  display:flex; justify-content:space-between; align-items:center;
 }
-
-/* ── Alert items ── */
 .alert-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: 4px;
-  border-left: 3px solid;
-  margin-bottom: 4px;
-  font-size: 0.72rem;
-  line-height: 1.3;
+  display:flex; align-items:center; gap:8px; padding:5px 8px;
+  border-radius:4px; border-left:3px solid; margin-bottom:4px;
+  font-size:.7rem; line-height:1.3;
 }
-.al-critical { border-color: var(--red);   background: rgba(248,81,73,.1); }
-.al-warning  { border-color: var(--amber); background: rgba(210,153,34,.1); }
-.al-moderate { border-color: #e3b341;      background: rgba(227,179,65,.07); }
-.al-normal   { border-color: var(--green); background: rgba(63,185,80,.07); }
-
-/* ── Buttons ── */
+.al-c { border-color:var(--red);   background:rgba(248,81,73,.1);  }
+.al-w { border-color:var(--amber); background:rgba(210,153,34,.1); }
+.al-m { border-color:#e3b341;      background:rgba(227,179,65,.07);}
+.al-n { border-color:var(--green); background:rgba(63,185,80,.07); }
 .btn {
-  padding: 4px 11px;
-  border-radius: 5px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text);
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.72rem;
-  transition: border-color .15s, background .15s, color .15s;
+  padding:4px 11px; border-radius:5px; border:1px solid var(--border);
+  background:var(--panel); color:var(--text); cursor:pointer;
+  font:inherit; font-size:.72rem; transition:border-color .15s,background .15s,color .15s;
 }
-.btn:hover           { border-color: var(--blue); color: var(--blue); }
-.btn.on              { background: var(--blue); border-color: var(--blue); color: #fff; }
-.btn.danger          { background: #6e2020; border-color: var(--red); color: var(--red); }
-.btn.danger:hover    { background: var(--red); color: #fff; }
-.btn.pause-run       { background: #163020; border-color: var(--green); color: var(--green); }
-.btn.pause-run:hover { background: var(--green); color: #fff; }
-.btn.pause-paused    { background: #332800; border-color: var(--amber); color: var(--amber); }
-
-/* ── Sliders ── */
-.sl-wrap { display:flex; flex-direction:column; gap:3px; min-width:120px; }
-.sl-wrap label { font-size:0.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+.btn:hover        { border-color:var(--blue); color:var(--blue); }
+.btn.on           { background:var(--blue);  border-color:var(--blue);  color:#fff; }
+.btn.danger       { background:#3a1414; border-color:var(--red);   color:var(--red); }
+.btn.danger:hover { background:var(--red);  color:#fff; }
+.btn.go           { background:#1a3020; border-color:var(--green); color:var(--green); }
+.btn.go:hover     { background:var(--green); color:#fff; }
+.btn.paused       { background:#332800; border-color:var(--amber); color:var(--amber); }
+.tab-btn {
+  padding:5px 14px; background:transparent; border:none; border-bottom:2px solid transparent;
+  color:var(--muted); cursor:pointer; font:inherit; font-size:.68rem;
+  text-transform:uppercase; letter-spacing:.08em; transition:color .15s,border-color .15s;
+}
+.tab-btn:hover  { color:var(--text); }
+.tab-btn.active { color:var(--blue); border-bottom-color:var(--blue); }
+.sl-wrap { display:flex; flex-direction:column; gap:3px; }
+.sl-wrap label { font-size:.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
 .sl-wrap label span { color:var(--text); }
 input[type=range] { width:100%; height:3px; accent-color:var(--blue); cursor:pointer; }
-
-/* ── Status dot ── */
 .dot { width:7px; height:7px; border-radius:50%; display:inline-block; flex-shrink:0; }
 .dot-live     { background:var(--green); box-shadow:0 0 6px var(--green); }
 .dot-paused   { background:var(--amber); }
 .dot-complete { background:var(--muted); }
-
-/* ── Traffic rows ── */
-.t-row { display:flex; align-items:center; gap:6px; padding:3px 4px; font-size:0.66rem; }
+.t-row { display:flex; align-items:center; gap:6px; padding:3px 4px; font-size:.65rem; }
 .t-row:nth-child(odd) { background:rgba(255,255,255,.03); border-radius:3px; }
-.t-bar-wrap { flex:1; height:4px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
-.t-bar      { height:100%; background:var(--blue); border-radius:2px; transition:width .4s; }
-
-/* ── Canvas overlay ── */
-#canvas-wrap { position:relative; flex:1; overflow:hidden; }
-#fp          { display:block; width:100%; height:100%; }
-
-/* ── Scrollbar ── */
+.t-bar-w { flex:1; height:4px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
+.t-bar   { height:100%; background:var(--blue); border-radius:2px; transition:width .4s; }
+canvas   { display:block; }
 ::-webkit-scrollbar { width:4px; }
-::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
-
-/* ── Pulse animation ── */
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
-.pulse { animation: pulse 1.6s ease-in-out infinite; }
-
-/* ── Tooltip legend chip ── */
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.pulse { animation:pulse 1.6s ease-in-out infinite; }
 .chip { display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:3px; }
+
+/* Tab3 split labels */
+.split-hdr {
+  position:absolute; top:6px; font-size:.62rem; text-transform:uppercase;
+  letter-spacing:.1em; color:var(--muted); pointer-events:none;
+}
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════ HEADER ══════════════════════════════════════════ -->
-<header style="background:var(--panel); border-bottom:1px solid var(--border);
-               padding:7px 16px; display:flex; align-items:center; gap:14px; flex-shrink:0">
-  <span style="font-size:.85rem; font-weight:700; letter-spacing:.06em">◈ HUMAN CYMATICS</span>
-  <span style="font-size:.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:.1em">
+<!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
+<header style="background:var(--panel);border-bottom:1px solid var(--border);
+               padding:7px 16px;display:flex;align-items:center;gap:14px;flex-shrink:0">
+  <span style="font-size:.85rem;font-weight:700;letter-spacing:.06em">◈ HUMAN CYMATICS</span>
+  <span style="font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">
     Crowd Intelligence Platform
   </span>
-
   <div style="flex:1"></div>
-
-  <!-- Status -->
-  <div style="display:flex; align-items:center; gap:6px">
-    <span class="dot dot-live" id="hdr-dot"></span>
-    <span id="hdr-status" style="font-size:.68rem; text-transform:uppercase;
-          letter-spacing:.08em; color:var(--green); min-width:60px">LIVE</span>
-  </div>
-
-  <!-- Timer -->
-  <div style="font-size:.72rem; color:var(--muted); background:var(--bg);
-              padding:3px 10px; border-radius:4px; border:1px solid var(--border);
-              font-family:monospace; min-width:108px; text-align:center">
+  <span class="dot dot-live" id="hdr-dot"></span>
+  <span id="hdr-status" style="font-size:.67rem;text-transform:uppercase;letter-spacing:.08em;
+        color:var(--green);min-width:62px">LIVE</span>
+  <div style="font-size:.72rem;color:var(--muted);background:var(--bg);
+              padding:3px 10px;border-radius:4px;border:1px solid var(--border);
+              font-family:monospace;min-width:110px;text-align:center">
     <span id="hdr-timer">0:00 / 5:00</span>
   </div>
-
-  <!-- Map badge -->
-  <div style="font-size:.68rem; color:var(--muted)">
-    MAP <span id="hdr-map" style="color:var(--blue); font-weight:700">V</span>
+  <div style="font-size:.67rem;color:var(--muted)">
+    MAP <span id="hdr-map" style="color:var(--blue);font-weight:700">V</span>
   </div>
-
-  <!-- WS status -->
-  <div id="hdr-ws" style="font-size:.62rem; color:var(--muted); min-width:86px; text-align:right">
+  <div id="hdr-ws" style="font-size:.62rem;color:var(--muted);min-width:88px;text-align:right">
     ● Connessione…
   </div>
 </header>
 
+<!-- ══ MAIN ════════════════════════════════════════════════════════════════ -->
+<main style="flex:1;display:grid;grid-template-columns:262px 1fr 294px;
+             gap:6px;padding:6px;min-height:0;overflow:hidden">
 
-<!-- ══════════════════════ MAIN ════════════════════════════════════════════ -->
-<main style="flex:1; display:grid; grid-template-columns:266px 1fr 296px;
-             gap:6px; padding:6px; min-height:0; overflow:hidden">
+  <!-- ─ LEFT SIDEBAR ──────────────────────────────────────────────────── -->
+  <div style="display:flex;flex-direction:column;gap:5px;overflow:hidden;min-height:0">
 
-  <!-- ─── LEFT SIDEBAR ─────────────────────────────────────────────────── -->
-  <div style="display:flex; flex-direction:column; gap:5px; overflow:hidden; min-height:0">
-
-    <!-- KPI 2×2 -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; flex-shrink:0">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;flex-shrink:0">
       <div class="kpi">
         <div class="kpi-val" id="kpi-real" style="color:var(--blue)">0</div>
         <div class="kpi-lbl">Persone reali</div>
@@ -188,94 +126,114 @@ input[type=range] { width:100%; height:3px; accent-color:var(--blue); cursor:poi
         <div class="kpi-val" id="kpi-est" style="color:var(--cyan)">0</div>
         <div class="kpi-lbl">Stima WiFi</div>
       </div>
-      <div class="kpi" id="kpi-risk-card">
+      <div class="kpi">
         <div class="kpi-val" id="kpi-risk" style="color:var(--green)">OK</div>
         <div class="kpi-lbl">Livello rischio</div>
       </div>
       <div class="kpi">
-        <div class="kpi-val" id="kpi-acc" style="color:var(--amber); font-size:1.6rem">—</div>
+        <div class="kpi-val" id="kpi-acc" style="color:var(--amber);font-size:1.55rem">—</div>
         <div class="kpi-lbl">Accuratezza</div>
       </div>
     </div>
 
-    <!-- Peak zone -->
     <div class="kpi" style="flex-shrink:0">
       <div class="kpi-lbl" style="margin-bottom:5px">Zona più affollata</div>
-      <div style="display:flex; align-items:center; justify-content:space-between">
-        <span id="peak-name" style="font-size:.9rem; font-weight:600">—</span>
-        <span id="peak-count" style="font-size:1.15rem; font-weight:700; color:var(--blue)">0</span>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span id="peak-name" style="font-size:.9rem;font-weight:600">—</span>
+        <span id="peak-count" style="font-size:1.15rem;font-weight:700;color:var(--blue)">0</span>
       </div>
     </div>
 
-    <!-- Alert feed -->
-    <div class="panel" style="flex:1; overflow:hidden; display:flex; flex-direction:column; padding:9px; min-height:0">
+    <div class="panel" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:9px;min-height:0">
       <div class="sec-hdr">⚠ Alert Zone</div>
-      <div id="alert-feed" style="overflow-y:auto; flex:1">
-        <div style="color:var(--muted); font-size:.7rem; text-align:center; margin-top:18px">
-          In attesa di dati…
+      <div id="alert-feed" style="overflow-y:auto;flex:1">
+        <div style="color:var(--muted);font-size:.7rem;text-align:center;margin-top:18px">In attesa…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─ CENTER: TABS ──────────────────────────────────────────────────── -->
+  <div class="panel" style="display:flex;flex-direction:column;overflow:hidden;min-height:0">
+
+    <!-- Tab bar + canvas toolbar (Tab 1 only) -->
+    <div style="border-bottom:1px solid var(--border);flex-shrink:0">
+      <div style="display:flex;align-items:center;padding:0 8px">
+        <button class="tab-btn active" onclick="switchTab(1)">Planimetria</button>
+        <button class="tab-btn"        onclick="switchTab(2)">Confronto</button>
+        <button class="tab-btn"        onclick="switchTab(3)">Traffico</button>
+        <button class="tab-btn"        onclick="switchTab(4)">Densità 3D</button>
+        <!-- Tab1 layer toggles -->
+        <div id="tab1-toolbar" style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:4px 0">
+          <label style="font-size:.61rem;color:var(--muted);display:flex;align-items:center;gap:3px;cursor:pointer">
+            <input type="checkbox" id="tog-heat"   checked> Heatmap</label>
+          <label style="font-size:.61rem;color:var(--muted);display:flex;align-items:center;gap:3px;cursor:pointer">
+            <input type="checkbox" id="tog-agents" checked> Agenti</label>
+          <label style="font-size:.61rem;color:var(--muted);display:flex;align-items:center;gap:3px;cursor:pointer">
+            <input type="checkbox" id="tog-zones"  checked> Zone</label>
+          <label style="font-size:.61rem;color:var(--muted);display:flex;align-items:center;gap:3px;cursor:pointer">
+            <input type="checkbox" id="tog-sniff"  checked> Sniffer</label>
         </div>
       </div>
     </div>
 
-  </div>
-
-
-  <!-- ─── CENTER: FLOOR PLAN ───────────────────────────────────────────── -->
-  <div class="panel" style="display:flex; flex-direction:column; overflow:hidden; min-height:0">
-
-    <!-- Canvas toolbar -->
-    <div style="padding:5px 10px; border-bottom:1px solid var(--border);
-                display:flex; align-items:center; gap:10px; flex-shrink:0">
-      <span style="font-size:.6rem; text-transform:uppercase; letter-spacing:.1em;
-                   color:var(--muted)">Planimetria live</span>
-      <div style="flex:1"></div>
-      <label style="font-size:.62rem; color:var(--muted); display:flex; align-items:center; gap:3px; cursor:pointer">
-        <input type="checkbox" id="tog-heat" checked> <span>Heatmap</span>
-      </label>
-      <label style="font-size:.62rem; color:var(--muted); display:flex; align-items:center; gap:3px; cursor:pointer">
-        <input type="checkbox" id="tog-agents" checked> <span>Agenti</span>
-      </label>
-      <label style="font-size:.62rem; color:var(--muted); display:flex; align-items:center; gap:3px; cursor:pointer">
-        <input type="checkbox" id="tog-zones" checked> <span>Zone</span>
-      </label>
-      <label style="font-size:.62rem; color:var(--muted); display:flex; align-items:center; gap:3px; cursor:pointer">
-        <input type="checkbox" id="tog-sniff" checked> <span>Sniffer</span>
-      </label>
+    <!-- TAB 1: live floor plan -->
+    <div id="tab1" style="flex:1;position:relative;overflow:hidden">
+      <canvas id="fp" style="width:100%;height:100%"></canvas>
     </div>
 
-    <!-- Canvas -->
-    <div id="canvas-wrap">
-      <canvas id="fp"></canvas>
+    <!-- TAB 2: confronto Ground Truth vs WiFi Estimate -->
+    <div id="tab2" style="display:none;flex:1;position:relative;overflow:hidden">
+      <canvas id="compare-cv" style="width:100%;height:100%"></canvas>
+      <div class="split-hdr" style="left:8px">Ground Truth</div>
+      <div class="split-hdr" style="right:8px">Stima WiFi</div>
+      <div style="position:absolute;top:0;bottom:0;left:50%;width:1px;background:rgba(255,255,255,.1);pointer-events:none"></div>
+    </div>
+
+    <!-- TAB 3: traiettorie (sx) + matrice traffico (dx) -->
+    <div id="tab3" style="display:none;flex:1;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;gap:0">
+        <div style="position:relative;overflow:hidden">
+          <canvas id="traj-cv" style="width:100%;height:100%"></canvas>
+          <div class="split-hdr" style="left:8px">Traiettorie Agenti</div>
+        </div>
+        <div style="position:relative;overflow:hidden;border-left:1px solid var(--border)">
+          <canvas id="matrix-cv" style="width:100%;height:100%"></canvas>
+          <div class="split-hdr" style="left:8px">Matrice Traffico</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: 3D density -->
+    <div id="tab4" style="display:none;flex:1;overflow:hidden;min-height:0">
+      <div style="display:flex;width:100%;height:100%;min-height:0">
+        <div id="plotly-live" style="flex:1;min-width:0;min-height:0"></div>
+        <div id="plotly-avg"  style="flex:1;min-width:0;min-height:0;border-left:1px solid var(--border)"></div>
+      </div>
     </div>
 
   </div>
 
+  <!-- ─ RIGHT SIDEBAR ─────────────────────────────────────────────────── -->
+  <div style="display:flex;flex-direction:column;gap:5px;overflow:hidden;min-height:0">
 
-  <!-- ─── RIGHT SIDEBAR ────────────────────────────────────────────────── -->
-  <div style="display:flex; flex-direction:column; gap:5px; overflow:hidden; min-height:0">
-
-    <!-- Zone density chart -->
-    <div class="panel" style="flex:3; overflow:hidden; display:flex; flex-direction:column;
-                               padding:9px; min-height:0">
-      <div class="sec-hdr" style="display:flex; justify-content:space-between; align-items:center">
-        <span>Densità per zona</span>
+    <div class="panel" style="flex:3;overflow:hidden;display:flex;flex-direction:column;padding:9px;min-height:0">
+      <div class="sec-hdr">
+        Densità per zona
         <span style="font-size:.58rem">
           <span class="chip" style="background:var(--blue)"></span>Reale
-          <span class="chip" style="background:var(--cyan); margin-left:5px"></span>WiFi
+          <span class="chip" style="background:var(--cyan);margin-left:4px"></span>WiFi
         </span>
       </div>
-      <div style="flex:1; min-height:0; position:relative">
+      <div style="flex:1;min-height:0;position:relative">
         <canvas id="zone-chart"></canvas>
       </div>
     </div>
 
-    <!-- Traffic top flows -->
-    <div class="panel" style="flex:2; overflow:hidden; display:flex; flex-direction:column;
-                               padding:9px; min-height:0">
+    <div class="panel" style="flex:2;overflow:hidden;display:flex;flex-direction:column;padding:9px;min-height:0">
       <div class="sec-hdr">↔ Top flussi zona</div>
-      <div id="traffic-list" style="overflow-y:auto; flex:1">
-        <div style="color:var(--muted); font-size:.68rem; text-align:center; margin-top:14px">
-          In attesa di movimenti…
+      <div id="traffic-list" style="overflow-y:auto;flex:1">
+        <div style="color:var(--muted);font-size:.68rem;text-align:center;margin-top:14px">
+          In attesa…
         </div>
       </div>
     </div>
@@ -283,509 +241,684 @@ input[type=range] { width:100%; height:3px; accent-color:var(--blue); cursor:poi
   </div>
 </main>
 
-
-<!-- ══════════════════════ CONTROLS BAR ════════════════════════════════════ -->
-<footer style="background:var(--panel); border-top:1px solid var(--border);
-               padding:6px 14px; display:flex; align-items:center; gap:12px;
-               flex-shrink:0; flex-wrap:nowrap; overflow:hidden">
-
-  <!-- Map selector -->
-  <div style="display:flex; flex-direction:column; gap:3px; flex-shrink:0">
-    <span style="font-size:.58rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em">Mappa</span>
-    <div style="display:flex; gap:3px" id="map-btns">
+<!-- ══ CONTROLS ════════════════════════════════════════════════════════════ -->
+<footer style="background:var(--panel);border-top:1px solid var(--border);
+               padding:6px 14px;display:flex;align-items:center;gap:12px;flex-shrink:0">
+  <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">
+    <span style="font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Mappa</span>
+    <div style="display:flex;gap:3px" id="map-btns">
       <button class="btn" data-k="S" onclick="setMap('S')">S</button>
       <button class="btn" data-k="M" onclick="setMap('M')">M</button>
       <button class="btn" data-k="L" onclick="setMap('L')">L</button>
       <button class="btn on" data-k="4" onclick="setMap('4')">V</button>
     </div>
   </div>
-
-  <div style="width:1px; height:32px; background:var(--border); flex-shrink:0"></div>
-
-  <!-- Behavior -->
-  <div style="display:flex; flex-direction:column; gap:3px; flex-shrink:0">
-    <span style="font-size:.58rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em">Comportamento</span>
-    <div style="display:flex; gap:3px" id="beh-btns">
+  <div style="width:1px;height:32px;background:var(--border);flex-shrink:0"></div>
+  <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">
+    <span style="font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Comportamento</span>
+    <div style="display:flex;gap:3px" id="beh-btns">
       <button class="btn on" data-b="wanderer" onclick="setBeh('wanderer')" title="Wanderer">W</button>
       <button class="btn"    data-b="goal"     onclick="setBeh('goal')"     title="Goal">G</button>
       <button class="btn"    data-b="social"   onclick="setBeh('social')"   title="Social">C</button>
     </div>
   </div>
-
-  <div style="width:1px; height:32px; background:var(--border); flex-shrink:0"></div>
-
-  <!-- n_people -->
-  <div class="sl-wrap" style="flex-shrink:0; width:138px">
-    <label>Persone: <span id="sl-np-val">100</span></label>
-    <input type="range" id="sl-np" min="10" max="300" value="100"
-           oninput="npChange(this.value)">
+  <div style="width:1px;height:32px;background:var(--border);flex-shrink:0"></div>
+  <div class="sl-wrap" style="min-width:130px;flex-shrink:0">
+    <label>Persone: <span id="sl-np-v">100</span></label>
+    <input type="range" id="sl-np" min="10" max="300" value="100" oninput="npChg(this.value)">
   </div>
-
-  <!-- sigma -->
-  <div class="sl-wrap" style="flex-shrink:0; width:130px">
-    <label>Rumore σ: <span id="sl-sig-val">2.0</span></label>
-    <input type="range" id="sl-sig" min="0.1" max="10" step="0.1" value="2"
-           oninput="sigChange(this.value)">
+  <div class="sl-wrap" style="min-width:126px;flex-shrink:0">
+    <label>Rumore σ: <span id="sl-sig-v">2.0</span></label>
+    <input type="range" id="sl-sig" min="0.1" max="10" step="0.1" value="2" oninput="sigChg(this.value)">
   </div>
-
   <div style="flex:1"></div>
-
-  <!-- Pause / Resume -->
-  <button class="btn pause-run" id="pause-btn" onclick="togglePause()" style="flex-shrink:0">
-    ⏸ Pausa
-  </button>
-
-  <!-- Reset -->
-  <button class="btn danger" onclick="doReset()" style="flex-shrink:0">⟳ Reset</button>
-
+  <div id="hdr-ws2" style="font-size:.62rem;color:var(--muted)">●</div>
+  <div style="width:1px;height:32px;background:var(--border);flex-shrink:0"></div>
+  <button class="btn go" id="pause-btn" onclick="togglePause()">⏸ Pausa</button>
+  <button class="btn danger" onclick="doReset()">⟳ Reset</button>
 </footer>
 
-
-<!-- ══════════════════════ SCRIPT ══════════════════════════════════════════ -->
+<!-- ══ SCRIPT ══════════════════════════════════════════════════════════════ -->
 <script>
 'use strict';
 
-// ── State ────────────────────────────────────────────────────────────────────
-let S       = null;       // latest snapshot from WebSocket
-let bgImg   = null;       // Image for floor plan background
-let bgKey   = null;       // track when to reload bg_image
+// ── Globals ──────────────────────────────────────────────────────────────────
+let S = null, activeTab = 1;
+let bgImg = null, bgKey = null;
+let showHeat=true, showAgents=true, showZones=true, showSniff=true;
+let stagedMap='4', stagedBeh='wanderer', stagedNP=100, liveSig=2.0;
+let zoneChart = null, chartTick = 0;
+let rafId = null, sigTimer = null;
+// Tab4 density accumulator
+let densAccum = null, densTicks = 0, plotlyLiveInit = false, plotlyAvgInit = false;
+let tab4Timer = 0;
+// Tab3 trajectory canvas — persistent across snapshots (light-painting)
+let trajDirty = true;
 
-let showHeat   = true;
-let showAgents = true;
-let showZones  = true;
-let showSniff  = true;
+// ── Colormaps ─────────────────────────────────────────────────────────────────
+const _VIRIDIS = [
+  [68,1,84],[72,34,115],[64,67,135],[52,94,141],[41,120,142],[32,144,141],
+  [34,168,132],[68,190,112],[121,209,81],[189,222,38],[253,231,37]
+];
+const _PLASMA = [
+  [13,8,135],[75,3,161],[125,3,168],[168,21,152],[203,52,126],[227,85,101],
+  [245,121,75],[253,161,49],[252,202,38],[240,249,33],[240,249,33]
+];
 
-let stagedMap = '4';
-let stagedBeh = 'wanderer';
-let stagedNP  = 100;
-let liveSig   = 2.0;
+function cmap(t, table) {
+  t = Math.max(0, Math.min(1, t));
+  const n = table.length - 1;
+  const i = Math.min(Math.floor(t * n), n - 1);
+  const f = t * n - i;
+  const [r1,g1,b1] = table[i], [r2,g2,b2] = table[i+1];
+  return [Math.round(r1+f*(r2-r1)), Math.round(g1+f*(g2-g1)), Math.round(b1+f*(b2-b1))];
+}
 
-let zoneChart   = null;
-let chartTick   = 0;
-let rafId       = null;
-let sigDebTimer = null;
-
-// ── WebSocket ────────────────────────────────────────────────────────────────
+// ── WebSocket ─────────────────────────────────────────────────────────────────
 let ws, wsRetry = 1000;
-
 function connectWS() {
   ws = new WebSocket(`ws://${location.host}/ws`);
-
-  ws.onopen = () => {
-    wsRetry = 1000;
-    setWsStatus('● Connesso', 'var(--green)');
-  };
-
-  ws.onmessage = ev => {
-    S = JSON.parse(ev.data);
-    onSnapshot(S);
-  };
-
+  ws.onopen  = () => { wsRetry=1000; setWS('● Connesso','var(--green)'); };
+  ws.onmessage = ev => { S = JSON.parse(ev.data); onSnap(S); };
   ws.onclose = ws.onerror = () => {
-    setWsStatus('● Disconnesso', 'var(--red)');
+    setWS('● Disconnesso','var(--red)');
     setTimeout(connectWS, wsRetry);
-    wsRetry = Math.min(wsRetry * 2, 10000);
+    wsRetry = Math.min(wsRetry*2, 10000);
   };
 }
-
-function setWsStatus(txt, col) {
-  const el = document.getElementById('hdr-ws');
-  el.textContent = txt;
-  el.style.color = col;
+function setWS(t,c) {
+  ['hdr-ws','hdr-ws2'].forEach(id => {
+    const el=document.getElementById(id); el.textContent=t; el.style.color=c;
+  });
 }
 
-// ── Snapshot handler (DOM updates) ──────────────────────────────────────────
-function onSnapshot(s) {
-  // Header
-  document.getElementById('hdr-timer').textContent =
-    fmt(s.elapsed) + ' / ' + fmt(s.duration);
-  document.getElementById('hdr-map').textContent =
-    s.map_key === '4' ? 'V' : s.map_key;
-
-  // Status dot + text
-  const dot = document.getElementById('hdr-dot');
-  const txt = document.getElementById('hdr-status');
-  const pbtn = document.getElementById('pause-btn');
-  if (s.is_complete) {
-    dot.className = 'dot dot-complete';
-    txt.textContent = 'COMPLETO'; txt.style.color = 'var(--muted)';
-    pbtn.className = 'btn'; pbtn.textContent = '⏸ Pausa';
-  } else if (s.paused) {
-    dot.className = 'dot dot-paused';
-    txt.textContent = 'IN PAUSA'; txt.style.color = 'var(--amber)';
-    pbtn.className = 'btn pause-paused'; pbtn.textContent = '▶ Riprendi';
-  } else {
-    dot.className = 'dot dot-live';
-    txt.textContent = 'LIVE'; txt.style.color = 'var(--green)';
-    pbtn.className = 'btn pause-run'; pbtn.textContent = '⏸ Pausa';
+// ── Snapshot handler ──────────────────────────────────────────────────────────
+function onSnap(s) {
+  updateDOM(s);
+  if (s.has_bg_image && bgKey !== s.map_key) {
+    bgKey = s.map_key; bgImg = new Image(); bgImg.src = '/bg_image?'+Date.now();
   }
+  if (activeTab === 1) { if (!rafId) rafId = requestAnimationFrame(loopTab1); }
+  if (activeTab === 2) renderCompare(s);
+  if (activeTab === 3) { renderTraj(s); renderMatrix(s); }
+  if (activeTab === 4) { if (++tab4Timer >= 5) { tab4Timer=0; renderDensity3D(s); } }
+  if (++chartTick >= 10) { chartTick=0; renderZoneChart(s.zones); renderTraffic(s.traffic, s.zones); }
+}
 
-  // KPIs
+// ── DOM updates ───────────────────────────────────────────────────────────────
+function updateDOM(s) {
+  document.getElementById('hdr-timer').textContent = fmt(s.elapsed)+' / '+fmt(s.duration);
+  document.getElementById('hdr-map').textContent   = s.map_key==='4'?'V':s.map_key;
+  const dot=document.getElementById('hdr-dot'), st=document.getElementById('hdr-status');
+  const pb=document.getElementById('pause-btn');
+  if (s.is_complete) {
+    dot.className='dot dot-complete'; st.textContent='COMPLETO'; st.style.color='var(--muted)';
+    pb.className='btn'; pb.textContent='⏸ Pausa';
+  } else if (s.paused) {
+    dot.className='dot dot-paused'; st.textContent='IN PAUSA'; st.style.color='var(--amber)';
+    pb.className='btn paused'; pb.textContent='▶ Riprendi';
+  } else {
+    dot.className='dot dot-live'; st.textContent='LIVE'; st.style.color='var(--green)';
+    pb.className='btn go'; pb.textContent='⏸ Pausa';
+  }
   document.getElementById('kpi-real').textContent = s.total_real;
   document.getElementById('kpi-est').textContent  = s.total_est;
-
-  const risk = maxRisk(s.zones);
-  document.getElementById('kpi-risk').textContent  = risk.label;
-  document.getElementById('kpi-risk').style.color  = risk.color;
-
-  const acc = accuracy(s.zones);
-  document.getElementById('kpi-acc').textContent = acc != null ? acc + '%' : '—';
-
-  // Peak zone
-  const peak = s.zones.reduce((a, b) => b.estimated > a.estimated ? b : a, {label:'—',estimated:0});
-  document.getElementById('peak-name').textContent  = peak.label  || '—';
-  document.getElementById('peak-count').textContent = peak.estimated || 0;
-
-  // Alerts
+  const rk = maxRisk(s.zones);
+  document.getElementById('kpi-risk').textContent = rk.label;
+  document.getElementById('kpi-risk').style.color = rk.color;
+  const ac = accuracy(s.zones);
+  document.getElementById('kpi-acc').textContent  = ac!=null ? ac+'%' : '—';
+  const pk = s.zones.reduce((a,b)=>b.estimated>a.estimated?b:a, {label:'—',estimated:0});
+  document.getElementById('peak-name').textContent  = pk.label||'—';
+  document.getElementById('peak-count').textContent = pk.estimated||0;
   renderAlerts(s.zones);
-
-  // Charts (every ~1 s = 10 ticks)
-  if (++chartTick >= 10) { chartTick = 0; renderZoneChart(s.zones); renderTraffic(s.traffic, s.zones); }
-
-  // Background image reload when map changes
-  if (s.has_bg_image && bgKey !== s.map_key) {
-    bgKey = s.map_key;
-    bgImg = new Image();
-    bgImg.src = '/bg_image?' + Date.now();   // cache-bust
-  }
-
-  // Canvas render
-  if (rafId === null) rafId = requestAnimationFrame(renderCanvas);
 }
 
-// ── Risk helpers ─────────────────────────────────────────────────────────────
-function zoneRisk(z) {
-  const area = z.rect[2] * z.rect[3];
-  const ratio = area > 0 ? z.estimated / (area / 300) : 0;
-  if (ratio >= 0.8) return { ratio, label:'CRITICO',  color:'var(--red)',   cls:'al-critical' };
-  if (ratio >= 0.5) return { ratio, label:'ALLERTA',  color:'var(--amber)', cls:'al-warning'  };
-  if (ratio >= 0.2) return { ratio, label:'MODERATO', color:'#e3b341',      cls:'al-moderate' };
-  return              { ratio, label:'NORMALE',  color:'var(--green)', cls:'al-normal'   };
+// ── Risk / accuracy helpers ───────────────────────────────────────────────────
+function zRisk(z) {
+  const area=z.rect[2]*z.rect[3], ratio=area>0?z.estimated/(area/300):0;
+  if (ratio>=.8) return {ratio,label:'CRITICO', color:'var(--red)',   cls:'al-c'};
+  if (ratio>=.5) return {ratio,label:'ALLERTA',  color:'var(--amber)',cls:'al-w'};
+  if (ratio>=.2) return {ratio,label:'MODERATO', color:'#e3b341',     cls:'al-m'};
+  return              {ratio,label:'NORMALE',  color:'var(--green)', cls:'al-n'};
 }
-
 function maxRisk(zones) {
-  let top = { ratio: 0, label:'OK', color:'var(--green)', cls:'al-normal' };
-  for (const z of zones) { const r = zoneRisk(z); if (r.ratio > top.ratio) top = r; }
-  if (top.ratio >= 0.8) return { label:'CRITICO',  color:'var(--red)'   };
-  if (top.ratio >= 0.5) return { label:'ALLERTA',  color:'var(--amber)' };
-  if (top.ratio >= 0.2) return { label:'MODERATO', color:'#e3b341'      };
-  return { label:'OK', color:'var(--green)' };
+  let top={ratio:0,label:'OK',color:'var(--green)'};
+  for (const z of zones) { const r=zRisk(z); if(r.ratio>top.ratio) top=r; }
+  return top;
 }
-
 function accuracy(zones) {
-  const a = zones.filter(z => z.real > 0);
-  if (!a.length) return null;
-  const err = a.reduce((s, z) => s + Math.abs(z.real - z.estimated) / z.real, 0) / a.length;
-  return Math.round((1 - Math.min(1, err)) * 100);
+  const a=zones.filter(z=>z.real>0);
+  if(!a.length) return null;
+  const e=a.reduce((s,z)=>s+Math.abs(z.real-z.estimated)/z.real,0)/a.length;
+  return Math.round((1-Math.min(1,e))*100);
 }
 
-// ── Alert feed ────────────────────────────────────────────────────────────────
+// ── Alerts ────────────────────────────────────────────────────────────────────
 function renderAlerts(zones) {
-  const sorted = [...zones].sort((a, b) => zoneRisk(b).ratio - zoneRisk(a).ratio);
-  document.getElementById('alert-feed').innerHTML = sorted.map(z => {
-    const r = zoneRisk(z);
-    const pct = Math.round(r.ratio * 100);
-    const pulse = r.label === 'CRITICO' ? 'pulse' : '';
-    return `<div class="alert-item ${r.cls} ${pulse}">
+  const sorted=[...zones].sort((a,b)=>zRisk(b).ratio-zRisk(a).ratio);
+  document.getElementById('alert-feed').innerHTML=sorted.map(z=>{
+    const r=zRisk(z), pct=Math.round(r.ratio*100), p=r.label==='CRITICO'?'pulse':'';
+    return `<div class="alert-item ${r.cls} ${p}">
       <div style="flex:1">
         <div style="font-weight:600;color:${r.color}">${z.label}</div>
-        <div style="color:var(--muted);font-size:.62rem">Est:&nbsp;${z.estimated}&nbsp;|&nbsp;Reale:&nbsp;${z.real}</div>
+        <div style="color:var(--muted);font-size:.61rem">Est:&nbsp;${z.estimated} | Reale:&nbsp;${z.real}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-weight:700;color:${r.color};font-size:.82rem">${pct}%</div>
+        <div style="font-weight:700;color:${r.color};font-size:.8rem">${pct}%</div>
         <div style="color:var(--muted);font-size:.58rem">${r.label}</div>
-      </div>
-    </div>`;
+      </div></div>`;
   }).join('');
 }
 
 // ── Zone Chart ────────────────────────────────────────────────────────────────
 function renderZoneChart(zones) {
-  if (!zones.length) return;
-  const labels = zones.map(z => z.label);
-  const real   = zones.map(z => z.real);
-  const est    = zones.map(z => z.estimated);
-
-  const chartCfg = {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label:'Reale', data: real, backgroundColor:'rgba(56,139,253,.8)',  borderColor:'#388bfd', borderWidth:1 },
-        { label:'WiFi',  data: est,  backgroundColor:'rgba(57,197,207,.55)', borderColor:'#39c5cf', borderWidth:1 },
-      ]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor:'#161b22', titleColor:'#e6edf3',
-          bodyColor:'#8b949e', borderColor:'#30363d', borderWidth:1,
-        }
-      },
-      scales: {
-        x: { ticks:{ color:'#8b949e', font:{size:9} }, grid:{ color:'rgba(255,255,255,.05)' } },
-        y: { ticks:{ color:'#e6edf3', font:{size:9, family:'monospace'} }, grid:{ display:false } }
-      }
+  if(!zones.length) return;
+  const cfg = {
+    type:'bar',
+    data:{ labels:zones.map(z=>z.label),
+      datasets:[
+        {label:'Reale',data:zones.map(z=>z.real), backgroundColor:'rgba(56,139,253,.8)',borderColor:'#388bfd',borderWidth:1},
+        {label:'WiFi', data:zones.map(z=>z.estimated),backgroundColor:'rgba(57,197,207,.55)',borderColor:'#39c5cf',borderWidth:1}
+      ]},
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#161b22',titleColor:'#e6edf3',bodyColor:'#8b949e',borderColor:'#30363d',borderWidth:1}},
+      scales:{x:{ticks:{color:'#8b949e',font:{size:9}},grid:{color:'rgba(255,255,255,.05)'}},
+              y:{ticks:{color:'#e6edf3',font:{size:9,family:'monospace'}},grid:{display:false}}}
     }
   };
-
-  if (!zoneChart) {
-    zoneChart = new Chart(document.getElementById('zone-chart').getContext('2d'), chartCfg);
-  } else {
-    zoneChart.data.labels = labels;
-    zoneChart.data.datasets[0].data = real;
-    zoneChart.data.datasets[1].data = est;
+  if (!zoneChart) zoneChart=new Chart(document.getElementById('zone-chart').getContext('2d'),cfg);
+  else {
+    zoneChart.data.labels=zones.map(z=>z.label);
+    zoneChart.data.datasets[0].data=zones.map(z=>z.real);
+    zoneChart.data.datasets[1].data=zones.map(z=>z.estimated);
     zoneChart.update('none');
   }
 }
 
 // ── Traffic list ──────────────────────────────────────────────────────────────
-function renderTraffic(traffic, zones) {
-  if (!traffic) return;
-  const lbl = id => { const z = zones.find(z => z.id === id); return z ? z.label : id; };
-  const flows = [];
-  for (const [from, tos] of Object.entries(traffic))
-    for (const [to, cnt] of Object.entries(tos))
-      if (from !== to && cnt > 0) flows.push({ from, to, cnt });
-  flows.sort((a, b) => b.cnt - a.cnt);
-  const top = flows.slice(0, 8);
-  if (!top.length) return;
-  const mx = top[0].cnt;
-  document.getElementById('traffic-list').innerHTML = top.map(f => {
-    const pct = Math.round(f.cnt / mx * 100);
+function renderTraffic(traffic,zones) {
+  if(!traffic) return;
+  const lbl=id=>{const z=zones.find(z=>z.id===id); return z?z.label:id;};
+  const flows=[];
+  for(const [f,ts] of Object.entries(traffic)) for(const [t,c] of Object.entries(ts)) if(f!==t&&c>0) flows.push({f,t,c});
+  flows.sort((a,b)=>b.c-a.c);
+  const top=flows.slice(0,8); if(!top.length) return;
+  const mx=top[0].c;
+  document.getElementById('traffic-list').innerHTML=top.map(fl=>{
+    const pct=Math.round(fl.c/mx*100);
     return `<div class="t-row">
-      <span style="color:var(--muted);min-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lbl(f.from)}</span>
+      <span style="color:var(--muted);min-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lbl(fl.f)}</span>
       <span style="color:var(--blue)">→</span>
-      <span style="color:var(--muted);min-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lbl(f.to)}</span>
-      <div class="t-bar-wrap"><div class="t-bar" style="width:${pct}%"></div></div>
-      <span style="font-weight:600;color:var(--text);min-width:24px;text-align:right">${f.cnt}</span>
+      <span style="color:var(--muted);min-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lbl(fl.t)}</span>
+      <div class="t-bar-w"><div class="t-bar" style="width:${pct}%"></div></div>
+      <span style="font-weight:600;min-width:22px;text-align:right">${fl.c}</span>
     </div>`;
   }).join('');
 }
 
-// ── Canvas rendering ──────────────────────────────────────────────────────────
-const canvas = document.getElementById('fp');
-const ctx    = canvas.getContext('2d');
+// ════════════════════════════════════════════════════════════════════════════
+// TAB 1 — Live floor plan + heatmap
+// ════════════════════════════════════════════════════════════════════════════
+const fp  = document.getElementById('fp');
+const fpc = fp.getContext('2d');
 
-function resizeCanvas() {
-  const r = canvas.parentElement.getBoundingClientRect();
-  const w = Math.floor(r.width), h = Math.floor(r.height);
-  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+function sizeCv(cv) {
+  const r=cv.parentElement.getBoundingClientRect();
+  const w=Math.floor(r.width), h=Math.floor(r.height);
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+}
+function xfm(mapSize, cv) {
+  const [mw,mh]=mapSize, sc=Math.min(cv.width/mw,cv.height/mh);
+  return {sc, ox:(cv.width-mw*sc)/2, oy:(cv.height-mh*sc)/2};
 }
 
-function transform(mapSize) {
-  const [mw, mh] = mapSize;
-  const sc = Math.min(canvas.width / mw, canvas.height / mh);
-  return { sc, ox: (canvas.width - mw * sc) / 2, oy: (canvas.height - mh * sc) / 2 };
+function loopTab1() {
+  rafId=null; if(!S||activeTab!==1) return;
+  sizeCv(fp);
+  const {sc,ox,oy}=xfm(S.map_size,fp);
+  const [mw,mh]=S.map_size;
+  fpc.fillStyle='#0d1117'; fpc.fillRect(0,0,fp.width,fp.height);
+  if(bgImg&&bgImg.complete&&bgImg.naturalWidth>0)
+    fpc.drawImage(bgImg,ox,oy,mw*sc,mh*sc);
+  else {fpc.fillStyle='#1a1e26'; fpc.fillRect(ox,oy,mw*sc,mh*sc);}
+
+  if(showZones) drawZones(fpc,S.zones,sc,ox,oy,true);
+  if(showHeat&&S.agents.length) drawHeatmap(fpc,S.agents,sc,ox,oy,fp.width,fp.height);
+  if(showAgents&&S.agents) drawAgents(fpc,S.agents,sc,ox,oy);
+  if(showSniff&&S.sniffers) drawSniffers(fpc,S.sniffers,sc,ox,oy);
+  rafId=requestAnimationFrame(loopTab1);
 }
 
-function renderCanvas() {
-  rafId = null;
-  if (!S) return;
+function drawZones(ctx,zones,sc,ox,oy,showLabel) {
+  for(const z of zones) {
+    const [zx,zy,zw,zh]=z.rect, [r,g,b,a]=z.colour;
+    ctx.fillStyle=`rgba(${r},${g},${b},${((a??100)/255)*.65})`;
+    ctx.fillRect(ox+zx*sc,oy+zy*sc,zw*sc,zh*sc);
+    const rk=zRisk(z);
+    ctx.strokeStyle=rk.color; ctx.lineWidth=rk.label==='CRITICO'?2:1;
+    ctx.globalAlpha=rk.label==='CRITICO'?1:.5;
+    ctx.strokeRect(ox+zx*sc,oy+zy*sc,zw*sc,zh*sc);
+    ctx.globalAlpha=1;
+    if(showLabel&&zw*sc>38){
+      const fs=Math.max(8,Math.min(11,Math.round(10*sc)));
+      ctx.font=`600 ${fs}px monospace`; ctx.textAlign='center';
+      ctx.fillStyle='rgba(230,237,243,.9)';
+      ctx.fillText(z.label,ox+(zx+zw/2)*sc,oy+(zy+13)*sc);
+      if(z.estimated>0){
+        ctx.font=`700 ${Math.max(7,fs-1)}px monospace`;
+        ctx.fillStyle=rk.color;
+        ctx.fillText(String(z.estimated),ox+(zx+zw/2)*sc,oy+(zy+24)*sc);
+      }
+    }
+  }
+}
 
-  resizeCanvas();
-  const { sc, ox, oy } = transform(S.map_size);
-  const [mw, mh] = S.map_size;
+function drawHeatmap(ctx,agents,sc,ox,oy,cw,ch) {
+  const off=new OffscreenCanvas(cw,ch), oc=off.getContext('2d');
+  oc.globalCompositeOperation='lighter';
+  const br=Math.max(14,40*sc);
+  for(const [ax,ay] of agents) {
+    const sx=ox+ax*sc, sy=oy+ay*sc;
+    if(sx<-br||sx>cw+br||sy<-br||sy>ch+br) continue;
+    const g=oc.createRadialGradient(sx,sy,0,sx,sy,br);
+    g.addColorStop(0,  'rgba(255,40,0,.20)');
+    g.addColorStop(.3, 'rgba(255,140,0,.12)');
+    g.addColorStop(.65,'rgba(50,100,255,.05)');
+    g.addColorStop(1,  'rgba(0,0,0,0)');
+    oc.fillStyle=g; oc.beginPath(); oc.arc(sx,sy,br,0,Math.PI*2); oc.fill();
+  }
+  ctx.save(); ctx.globalAlpha=.70; ctx.drawImage(off,0,0); ctx.restore();
+}
 
-  // ── Background ──────────────────────────────────────────────────────────
-  ctx.fillStyle = '#0d1117';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+function drawAgents(ctx,agents,sc,ox,oy) {
+  const ar=Math.max(1.5,2.5*sc);
+  ctx.fillStyle='rgba(200,220,255,.7)'; ctx.beginPath();
+  for(const [ax,ay] of agents) {
+    ctx.moveTo(ox+ax*sc+ar,oy+ay*sc);
+    ctx.arc(ox+ax*sc,oy+ay*sc,ar,0,Math.PI*2);
+  }
+  ctx.fill();
+}
 
-  if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
-    ctx.drawImage(bgImg, ox, oy, mw * sc, mh * sc);
+function drawSniffers(ctx,sniffers,sc,ox,oy) {
+  for(const sn of sniffers) {
+    const sx=ox+sn.pos[0]*sc, sy=oy+sn.pos[1]*sc, sr=Math.max(5,9*sc);
+    ctx.strokeStyle='#3fb950'; ctx.lineWidth=Math.max(1,1.4*sc);
+    for(const rad of [sr*.38,sr*.68,sr]) {
+      ctx.beginPath(); ctx.arc(sx,sy,rad,Math.PI*1.2,Math.PI*1.8); ctx.stroke();
+    }
+    ctx.fillStyle='#3fb950'; ctx.beginPath(); ctx.arc(sx,sy,Math.max(2,2*sc),0,Math.PI*2); ctx.fill();
+    if(sn.estimated>0){
+      const fs=Math.max(8,Math.round(9*sc));
+      ctx.font=`700 ${fs}px monospace`; ctx.textAlign='center'; ctx.fillStyle='#3fb950';
+      ctx.fillText(String(sn.estimated),sx,sy+sr+Math.max(9,11*sc));
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TAB 2 — Confronto: Ground Truth (sx) vs Stima WiFi (dx)
+//          Zones colored by viridis, shared normalization
+// ════════════════════════════════════════════════════════════════════════════
+const cmpCv = document.getElementById('compare-cv');
+const cmpC  = cmpCv.getContext('2d');
+
+function renderCompare(s) {
+  if(activeTab!==2) return;
+  sizeCv(cmpCv);
+  const W=cmpCv.width, H=cmpCv.height, half=Math.floor(W/2);
+
+  cmpC.fillStyle='#0d0f14'; cmpC.fillRect(0,0,W,H);
+
+  // Shared max for normalisation
+  const all=[...s.zones.map(z=>z.real), ...s.zones.map(z=>z.estimated)];
+  const normMax=Math.max(1,...all);
+
+  function drawSide(ctx,zones,getVal,agents,xOff,panelW) {
+    const [mw,mh]=s.map_size, sc=Math.min(panelW/mw,H/mh);
+    const ox=xOff+(panelW-mw*sc)/2, oy=(H-mh*sc)/2;
+
+    // Background image (half of it)
+    if(bgImg&&bgImg.complete&&bgImg.naturalWidth>0) {
+      ctx.save(); ctx.beginPath(); ctx.rect(xOff,0,panelW,H); ctx.clip();
+      ctx.drawImage(bgImg,ox,oy,mw*sc,mh*sc); ctx.restore();
+      ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(xOff,0,panelW,H);
+    }
+
+    for(const z of zones) {
+      const [zx,zy,zw,zh]=z.rect, val=getVal(z);
+      const t=val/normMax;
+      const [r,g,b]=cmap(t,_VIRIDIS);
+      ctx.fillStyle=`rgba(${r},${g},${b},0.85)`;
+      ctx.fillRect(ox+zx*sc,oy+zy*sc,zw*sc,zh*sc);
+      ctx.strokeStyle=`rgba(${r},${g},${b},0.5)`;
+      ctx.lineWidth=1; ctx.strokeRect(ox+zx*sc,oy+zy*sc,zw*sc,zh*sc);
+      // Label
+      if(zw*sc>30) {
+        const lum=0.299*r+0.587*g+0.114*b;
+        const tcol=lum<140?'rgba(240,240,240,.95)':'rgba(10,10,10,.95)';
+        const fs=Math.max(8,Math.min(12,Math.round(10*sc)));
+        ctx.font=`600 ${fs}px monospace`; ctx.textAlign='center';
+        ctx.fillStyle=tcol;
+        ctx.fillText(z.label, ox+(zx+zw/2)*sc, oy+(zy+zh/2)*sc-4);
+        ctx.font=`700 ${fs+1}px monospace`;
+        ctx.fillText(String(val), ox+(zx+zw/2)*sc, oy+(zy+zh/2)*sc+10);
+      }
+    }
+
+    // Agents on ground truth side only
+    if(agents) drawAgentsMini(ctx,agents,sc,ox,oy);
+  }
+
+  // Left half: real
+  cmpC.save(); cmpC.beginPath(); cmpC.rect(0,0,half,H); cmpC.clip();
+  drawSide(cmpC,s.zones,z=>z.real,s.agents,0,half);
+  cmpC.restore();
+
+  // Right half: estimated (no agent dots)
+  cmpC.save(); cmpC.beginPath(); cmpC.rect(half,0,half,H); cmpC.clip();
+  drawSide(cmpC,s.zones,z=>z.estimated,null,half,half);
+  cmpC.restore();
+
+  // Divider + headers
+  cmpC.fillStyle='rgba(255,255,255,.12)'; cmpC.fillRect(half-1,0,2,H);
+  cmpC.font='700 10px monospace'; cmpC.textAlign='left';
+  cmpC.fillStyle='rgba(255,255,255,.4)';
+  cmpC.fillText('GROUND TRUTH',8,18);
+  cmpC.textAlign='right'; cmpC.fillText('STIMA WiFi',W-8,18);
+}
+
+function drawAgentsMini(ctx,agents,sc,ox,oy) {
+  const ar=Math.max(1.2,2*sc);
+  ctx.fillStyle='rgba(200,230,255,.6)'; ctx.beginPath();
+  for(const [ax,ay] of agents) {
+    ctx.moveTo(ox+ax*sc+ar,oy+ay*sc);
+    ctx.arc(ox+ax*sc,oy+ay*sc,ar,0,Math.PI*2);
+  }
+  ctx.fill();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TAB 3 — Traiettorie (sx) + Matrice Traffico plasma (dx)
+// ════════════════════════════════════════════════════════════════════════════
+const trajCv = document.getElementById('traj-cv');
+const trajC  = trajCv.getContext('2d');
+const matCv  = document.getElementById('matrix-cv');
+const matC   = matCv.getContext('2d');
+
+const TRAIL_COLORS = [
+  '#388bfd','#3fb950','#d29922','#f85149','#bc8cff',
+  '#39c5cf','#ff7b72','#ffa657','#79c0ff','#56d364'
+];
+
+function renderTraj(s) {
+  if(activeTab!==3) return;
+  sizeCv(trajCv);
+  const {sc,ox,oy}=xfm(s.map_size,trajCv);
+  const [mw,mh]=s.map_size;
+
+  trajC.fillStyle='#080810'; trajC.fillRect(0,0,trajCv.width,trajCv.height);
+
+  // Subtle map background
+  if(bgImg&&bgImg.complete) {
+    trajC.save();
+    trajC.globalAlpha=0.12;
+    trajC.drawImage(bgImg,ox,oy,mw*sc,mh*sc);
+    trajC.restore();
+  }
+
+  // Zone outlines
+  for(const z of s.zones) {
+    const [zx,zy,zw,zh]=z.rect;
+    trajC.strokeStyle='rgba(100,110,150,.3)'; trajC.lineWidth=1;
+    trajC.strokeRect(ox+zx*sc,oy+zy*sc,zw*sc,zh*sc);
+  }
+
+  // Trajectory light-painting
+  trajC.save();
+  trajC.globalCompositeOperation='lighter';
+  if(!s.trajectories||!s.trajectories.length) {
+    trajC.restore(); return;
+  }
+  s.trajectories.forEach((hist,i)=>{
+    if(hist.length<2) return;
+    const col=TRAIL_COLORS[i%TRAIL_COLORS.length];
+    trajC.strokeStyle=col;
+    // Old segments: very low alpha; recent segments: higher alpha
+    const n=hist.length;
+    for(let k=1;k<n;k++){
+      const fade=(k/n);
+      trajC.globalAlpha=Math.max(.02, fade*0.25);
+      trajC.lineWidth=Math.max(.8,1.2*sc);
+      trajC.beginPath();
+      trajC.moveTo(ox+hist[k-1][0]*sc, oy+hist[k-1][1]*sc);
+      trajC.lineTo(ox+hist[k][0]*sc,   oy+hist[k][1]*sc);
+      trajC.stroke();
+    }
+  });
+  trajC.restore();
+
+  // Current positions as bright dots
+  if(s.trajectories.length) {
+    for(let i=0;i<s.trajectories.length;i++){
+      const h=s.trajectories[i]; if(!h.length) continue;
+      const [lx,ly]=h[h.length-1];
+      trajC.fillStyle=TRAIL_COLORS[i%TRAIL_COLORS.length];
+      trajC.beginPath();
+      trajC.arc(ox+lx*sc,oy+ly*sc,Math.max(2,3*sc),0,Math.PI*2);
+      trajC.fill();
+    }
+  }
+
+  // Caption
+  const n=s.trajectories?s.trajectories.length:0;
+  trajC.font='10px monospace'; trajC.textAlign='center';
+  trajC.fillStyle='rgba(140,150,180,.6)';
+  trajC.fillText(`Traiettorie (${n} agenti tracked, cumulativo)`,trajCv.width/2,trajCv.height-8);
+}
+
+function renderMatrix(s) {
+  if(activeTab!==3||!s.traffic||!s.zones.length) return;
+  sizeCv(matCv);
+  const W=matCv.width, H=matCv.height;
+  matC.fillStyle='#0a0a14'; matC.fillRect(0,0,W,H);
+
+  const ids=s.zones.map(z=>z.id), labels=s.zones.map(z=>z.label);
+  const n=ids.length; if(!n) return;
+
+  // Build matrix + find max
+  let mx=0;
+  const mat=ids.map(zi=>ids.map(zj=>{
+    const v=((s.traffic[zi]||{})[zj])||0; if(v>mx) mx=v; return v;
+  }));
+
+  const margin=42, cellW=Math.floor((W-margin)/n), cellH=Math.floor((H-margin-20)/n);
+
+  // Cells
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+    const v=mat[i][j], t=mx>0?v/mx:0;
+    const [r,g,b]=cmap(t,_PLASMA);
+    matC.fillStyle=`rgb(${r},${g},${b})`;
+    matC.fillRect(margin+j*cellW, margin+i*cellH, cellW-1, cellH-1);
+    if(v>0&&cellW>18){
+      matC.font=`${Math.max(7,Math.min(9,cellH-2))}px monospace`;
+      matC.textAlign='center'; matC.fillStyle=t>.5?'rgba(0,0,0,.8)':'rgba(255,255,255,.7)';
+      matC.fillText(String(v), margin+j*cellW+cellW/2, margin+i*cellH+cellH/2+3);
+    }
+  }
+
+  // Axis labels
+  matC.fillStyle='rgba(180,180,200,.8)'; matC.font=`${Math.max(7,Math.min(9,cellH-4))}px monospace`;
+  for(let i=0;i<n;i++){
+    const lbl=labels[i].slice(0,6);
+    matC.textAlign='right';
+    matC.fillText(lbl, margin-3, margin+i*cellH+cellH/2+3);
+    matC.textAlign='center';
+    matC.save(); matC.translate(margin+i*cellW+cellW/2, margin-4);
+    matC.rotate(-Math.PI/4); matC.fillText(lbl,0,0); matC.restore();
+  }
+
+  // Grid borders
+  matC.strokeStyle='rgba(255,255,255,.06)'; matC.lineWidth=1;
+  for(let i=0;i<=n;i++){
+    matC.beginPath(); matC.moveTo(margin+i*cellW,margin); matC.lineTo(margin+i*cellW,margin+n*cellH); matC.stroke();
+    matC.beginPath(); matC.moveTo(margin,margin+i*cellH); matC.lineTo(margin+n*cellW,margin+i*cellH); matC.stroke();
+  }
+
+  matC.font='10px monospace'; matC.textAlign='center'; matC.fillStyle='rgba(140,150,180,.5)';
+  matC.fillText('Matrice Traffico (plasma)',W/2,H-6);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TAB 4 — 3D Density surface (Plotly)
+// ════════════════════════════════════════════════════════════════════════════
+const GRID_W=60, GRID_H=50;
+
+function computeGrid(agents,mapSize,sigmaMap) {
+  const [mw,mh]=mapSize, grid=new Float32Array(GRID_W*GRID_H);
+  const cw=mw/GRID_W, ch=mh/GRID_H;
+  const sigCells=sigmaMap/Math.max(cw,ch);
+  const R=Math.ceil(sigCells*3);
+  for(const [ax,ay] of agents){
+    const gx=ax/cw, gy=ay/ch;
+    for(let dy=-R;dy<=R;dy++) for(let dx=-R;dx<=R;dx++){
+      const nx=Math.round(gx)+dx, ny=Math.round(gy)+dy;
+      if(nx<0||nx>=GRID_W||ny<0||ny>=GRID_H) continue;
+      grid[ny*GRID_W+nx]+=Math.exp(-(dx*dx+dy*dy)/(2*sigCells*sigCells));
+    }
+  }
+  // to 2D array
+  const z=[];
+  for(let y=0;y<GRID_H;y++){const row=[]; for(let x=0;x<GRID_W;x++) row.push(grid[y*GRID_W+x]); z.push(row);}
+  return z;
+}
+
+const PLOTLY_COLORSCALE=[
+  [0,'#0d1117'],[0.15,'#163a5e'],[0.35,'#388bfd'],[0.55,'#39c5cf'],
+  [0.75,'#d29922'],[0.9,'#f85149'],[1,'#ffffff']
+];
+const PLOTLY_LAYOUT_BASE={
+  paper_bgcolor:'#0d1117', plot_bgcolor:'#0d1117',
+  autosize:true,
+  scene:{
+    bgcolor:'#0d1117',
+    xaxis:{visible:false}, yaxis:{visible:false},
+    zaxis:{showgrid:false,zeroline:false,showticklabels:false,title:''},
+    aspectmode:'manual',
+    aspectratio:{x:1.6, y:1.0, z:0.55},
+    camera:{eye:{x:1.4,y:1.4,z:1.0}},
+  },
+  margin:{t:36,b:10,l:10,r:10},
+  font:{color:'#8b949e',size:10},
+};
+
+function renderDensity3D(s) {
+  if(activeTab!==4||!s.agents.length) return;
+
+  const liveZ=computeGrid(s.agents,s.map_size,40);
+
+  // Accumulate session average
+  if(!densAccum){
+    densAccum=liveZ.map(row=>[...row]);
   } else {
-    ctx.fillStyle = '#1a1e26';
-    ctx.fillRect(ox, oy, mw * sc, mh * sc);
+    for(let y=0;y<GRID_H;y++) for(let x=0;x<GRID_W;x++) densAccum[y][x]+=liveZ[y][x];
   }
+  densTicks++;
+  const avgZ=densAccum.map(row=>row.map(v=>v/densTicks));
 
-  // ── Zone overlays ────────────────────────────────────────────────────────
-  if (showZones) {
-    for (const z of S.zones) {
-      const [zx, zy, zw, zh] = z.rect;
-      const [r, g, b, a] = z.colour;
-      const alpha = (a ?? 100) / 255;
+  const trLive=[{z:liveZ,type:'surface',colorscale:PLOTLY_COLORSCALE,showscale:false,lighting:{ambient:.9}}];
+  const trAvg =[{z:avgZ, type:'surface',colorscale:PLOTLY_COLORSCALE,showscale:false,lighting:{ambient:.9}}];
 
-      ctx.fillStyle = `rgba(${r},${g},${b},${alpha * 0.65})`;
-      ctx.fillRect(ox + zx * sc, oy + zy * sc, zw * sc, zh * sc);
+  const ll={...PLOTLY_LAYOUT_BASE,title:{text:'Densità Live',font:{color:'#8b949e',size:10},x:.5}};
+  const al={...PLOTLY_LAYOUT_BASE,title:{text:'Media Sessione',font:{color:'#8b949e',size:10},x:.5}};
 
-      // Risk-tinted border
-      const risk = zoneRisk(z);
-      ctx.strokeStyle = risk.color;
-      ctx.lineWidth = risk.label === 'CRITICO' ? 2 : 1;
-      ctx.globalAlpha = risk.label === 'CRITICO' ? 1 : 0.5;
-      ctx.strokeRect(ox + zx * sc, oy + zy * sc, zw * sc, zh * sc);
-      ctx.globalAlpha = 1;
-
-      // Zone label
-      if (zw * sc > 38) {
-        const fs = Math.max(8, Math.min(11, Math.round(10 * sc)));
-        ctx.font = `600 ${fs}px monospace`;
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(230,237,243,0.9)';
-        ctx.fillText(z.label, ox + (zx + zw / 2) * sc, oy + (zy + 13) * sc);
-
-        // Count badge
-        if (z.estimated > 0) {
-          const badge = String(z.estimated);
-          const bx = ox + (zx + zw / 2) * sc;
-          const by = oy + (zy + 24) * sc;
-          ctx.font = `700 ${Math.max(8, fs - 1)}px monospace`;
-          ctx.fillStyle = risk.color;
-          ctx.fillText(badge, bx, by);
-        }
-      }
-    }
+  const cfg={displayModeBar:false,responsive:true};
+  if(!plotlyLiveInit){
+    Plotly.newPlot('plotly-live',trLive,ll,cfg); plotlyLiveInit=true;
+  } else {
+    Plotly.react('plotly-live',trLive,ll,cfg);
   }
-
-  // ── Heatmap ──────────────────────────────────────────────────────────────
-  if (showHeat && S.agents && S.agents.length > 0) {
-    drawHeatmap(sc, ox, oy);
+  if(!plotlyAvgInit){
+    Plotly.newPlot('plotly-avg',trAvg,al,cfg); plotlyAvgInit=true;
+  } else {
+    Plotly.react('plotly-avg',trAvg,al,cfg);
   }
-
-  // ── Agents ───────────────────────────────────────────────────────────────
-  if (showAgents && S.agents) {
-    const ar = Math.max(1.5, 2.5 * sc);
-    ctx.fillStyle = 'rgba(200,220,255,0.7)';
-    ctx.beginPath();
-    for (const [ax, ay] of S.agents) {
-      ctx.moveTo(ox + ax * sc + ar, oy + ay * sc);
-      ctx.arc(ox + ax * sc, oy + ay * sc, ar, 0, Math.PI * 2);
-    }
-    ctx.fill();
-  }
-
-  // ── Sniffers ──────────────────────────────────────────────────────────────
-  if (showSniff && S.sniffers) {
-    for (const sn of S.sniffers) {
-      const sx = ox + sn.pos[0] * sc;
-      const sy = oy + sn.pos[1] * sc;
-      const sr = Math.max(5, 9 * sc);
-
-      ctx.strokeStyle = '#3fb950';
-      ctx.lineWidth = Math.max(1, 1.4 * sc);
-      for (const rad of [sr * 0.38, sr * 0.68, sr]) {
-        ctx.beginPath();
-        ctx.arc(sx, sy, rad, Math.PI * 1.2, Math.PI * 1.8);
-        ctx.stroke();
-      }
-      ctx.fillStyle = '#3fb950';
-      ctx.beginPath();
-      ctx.arc(sx, sy, Math.max(2, 2 * sc), 0, Math.PI * 2);
-      ctx.fill();
-
-      if (sn.estimated > 0) {
-        const fs = Math.max(8, Math.round(9 * sc));
-        ctx.font = `700 ${fs}px monospace`;
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#3fb950';
-        ctx.fillText(String(sn.estimated), sx, sy + sr + Math.max(9, 11 * sc));
-      }
-    }
-  }
-
-  rafId = requestAnimationFrame(renderCanvas);
 }
 
-// ── Heatmap (OffscreenCanvas + lighter compositing) ───────────────────────────
-function drawHeatmap(sc, ox, oy) {
-  const w = canvas.width, h = canvas.height;
-  const off  = new OffscreenCanvas(w, h);
-  const octx = off.getContext('2d');
-  octx.globalCompositeOperation = 'lighter';
-
-  const blobR = Math.max(14, 40 * sc);
-  for (const [ax, ay] of S.agents) {
-    const sx = ox + ax * sc, sy = oy + ay * sc;
-    if (sx < -blobR || sx > w + blobR || sy < -blobR || sy > h + blobR) continue;
-    const g = octx.createRadialGradient(sx, sy, 0, sx, sy, blobR);
-    g.addColorStop(0,    'rgba(255, 40,  0, 0.20)');
-    g.addColorStop(0.30, 'rgba(255,140,  0, 0.12)');
-    g.addColorStop(0.65, 'rgba( 50,100,255, 0.05)');
-    g.addColorStop(1,    'rgba(  0,  0,  0, 0)');
-    octx.fillStyle = g;
-    octx.beginPath();
-    octx.arc(sx, sy, blobR, 0, Math.PI * 2);
-    octx.fill();
-  }
-
-  ctx.save();
-  ctx.globalAlpha = 0.70;
-  ctx.drawImage(off, 0, 0);
-  ctx.restore();
-}
-
-// ── Controls ──────────────────────────────────────────────────────────────────
-function api(action, extra = {}) {
-  return fetch('/control', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...extra })
+// ════════════════════════════════════════════════════════════════════════════
+// Tab switching
+// ════════════════════════════════════════════════════════════════════════════
+function switchTab(n) {
+  activeTab=n;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i+1===n));
+  ['tab1','tab2','tab3','tab4'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.style.display=(i+1===n)?'flex':'none';
   });
+  document.getElementById('tab1-toolbar').style.display=n===1?'flex':'none';
+
+  // Kick off renders for the newly active tab
+  if(n===1&&S) { if(!rafId) rafId=requestAnimationFrame(loopTab1); }
+  if(n===2&&S) renderCompare(S);
+  if(n===3&&S) { renderTraj(S); renderMatrix(S); }
+  if(n===4&&S) {
+    tab4Timer=99;
+    // Let the DOM paint first, then render + resize
+    setTimeout(()=>{
+      renderDensity3D(S);
+      if(plotlyLiveInit) Plotly.Plots.resize('plotly-live');
+      if(plotlyAvgInit)  Plotly.Plots.resize('plotly-avg');
+    }, 60);
+  }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// Controls
+// ════════════════════════════════════════════════════════════════════════════
+function api(action,extra={}) {
+  return fetch('/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...extra})});
+}
 function setMap(k) {
-  stagedMap = k;
-  document.querySelectorAll('#map-btns .btn').forEach(b =>
-    b.classList.toggle('on', b.dataset.k === k));
+  stagedMap=k;
+  document.querySelectorAll('#map-btns .btn').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
 }
-
 function setBeh(b) {
-  stagedBeh = b;
-  document.querySelectorAll('#beh-btns .btn').forEach(el =>
-    el.classList.toggle('on', el.dataset.b === b));
+  stagedBeh=b;
+  document.querySelectorAll('#beh-btns .btn').forEach(el=>el.classList.toggle('on',el.dataset.b===b));
 }
-
-function npChange(v) {
-  stagedNP = parseInt(v);
-  document.getElementById('sl-np-val').textContent = stagedNP;
+function npChg(v)  { stagedNP=parseInt(v); document.getElementById('sl-np-v').textContent=stagedNP; }
+function sigChg(v) {
+  liveSig=parseFloat(parseFloat(v).toFixed(1));
+  document.getElementById('sl-sig-v').textContent=liveSig.toFixed(1);
+  clearTimeout(sigTimer); sigTimer=setTimeout(()=>api('set_sigma',{value:liveSig}),80);
 }
-
-function sigChange(v) {
-  liveSig = parseFloat(parseFloat(v).toFixed(1));
-  document.getElementById('sl-sig-val').textContent = liveSig.toFixed(1);
-  clearTimeout(sigDebTimer);
-  sigDebTimer = setTimeout(() => api('set_sigma', { value: liveSig }), 80);
-}
-
 function togglePause() { api('toggle_pause'); }
-
 function doReset() {
-  bgImg = null; bgKey = null;
-  if (zoneChart) { zoneChart.destroy(); zoneChart = null; }
-  api('reset', {
-    map_key:     stagedMap,
-    behavior:    stagedBeh,
-    n_people:    stagedNP,
-    sigma_error: liveSig,
-  });
+  bgImg=null; bgKey=null; densAccum=null; densTicks=0;
+  plotlyLiveInit=false; plotlyAvgInit=false;
+  if(zoneChart){zoneChart.destroy();zoneChart=null;}
+  api('reset',{map_key:stagedMap,behavior:stagedBeh,n_people:stagedNP,sigma_error:liveSig});
+  setTimeout(()=>{ bgImg=new Image(); bgImg.src='/bg_image?'+Date.now(); bgKey=stagedMap; },350);
 }
 
-// ── Toggle checkboxes ─────────────────────────────────────────────────────────
-document.getElementById('tog-heat').addEventListener('change',   e => showHeat   = e.target.checked);
-document.getElementById('tog-agents').addEventListener('change', e => showAgents = e.target.checked);
-document.getElementById('tog-zones').addEventListener('change',  e => showZones  = e.target.checked);
-document.getElementById('tog-sniff').addEventListener('change',  e => showSniff  = e.target.checked);
+// Toggle checkboxes (Tab 1)
+document.getElementById('tog-heat').addEventListener('change',  e=>showHeat=e.target.checked);
+document.getElementById('tog-agents').addEventListener('change',e=>showAgents=e.target.checked);
+document.getElementById('tog-zones').addEventListener('change', e=>showZones=e.target.checked);
+document.getElementById('tog-sniff').addEventListener('change', e=>showSniff=e.target.checked);
 
-// ── Resize ────────────────────────────────────────────────────────────────────
-new ResizeObserver(() => { if (S) rafId = rafId ?? requestAnimationFrame(renderCanvas); })
-  .observe(document.getElementById('canvas-wrap'));
+// Resize observer
+new ResizeObserver(()=>{
+  if(S&&activeTab===1&&!rafId) rafId=requestAnimationFrame(loopTab1);
+}).observe(document.getElementById('tab1'));
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
-function fmt(s) {
-  const m = Math.floor(s / 60), ss = Math.floor(s % 60);
-  return `${m}:${String(ss).padStart(2, '0')}`;
-}
+function fmt(s){const m=Math.floor(s/60),ss=Math.floor(s%60); return `${m}:${String(ss).padStart(2,'0')}`;}
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-bgImg = new Image();
-bgImg.src = '/bg_image';
-bgKey = '4';
-
+bgImg=new Image(); bgImg.src='/bg_image'; bgKey='4';
 connectWS();
 </script>
 </body>
