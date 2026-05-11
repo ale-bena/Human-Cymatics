@@ -10,7 +10,7 @@ N_PEOPLE = 50
 SIM_DURATION = 300  # seconds (SIM-07: auto-stop after this duration)
 
 # Agent movement (D-02)
-AGENT_SPEED = 1.5       # pixels per frame
+AGENT_SPEED = 0.75      # pixels per frame
 AGENT_NOISE = 0.3       # px/frame random jitter magnitude
 AGENT_RADIUS = 4        # render radius in pixels
 ARRIVAL_THRESHOLD = 12  # distance in px at which agent considers POI reached
@@ -51,10 +51,10 @@ STATUS_BAR_H = 20        # bottom status bar (existing, now named)
 
 # Phase 2 — Slider ranges (CTR-01)
 N_PEOPLE_MIN = 10
-N_PEOPLE_MAX = 300
+N_PEOPLE_MAX = 500
 N_PEOPLE_DEFAULT = 50       # small map default
 N_PEOPLE_DEFAULT_M = 150    # medium map default
-N_PEOPLE_DEFAULT_L = 300    # large map default
+N_PEOPLE_DEFAULT_L = 500    # large map default
 SIGMA_ERROR_MIN = 0.1
 SIGMA_ERROR_MAX = 10.0
 SIGMA_KERNEL_MIN = 10.0
