@@ -5,6 +5,10 @@
 
 import sys
 import os
+import threading
+from functools import partial
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pygame
@@ -93,6 +97,32 @@ def slider_value_from_x(mx, rect, vmin, vmax):
 
 
 # ---------------------------------------------------------------------------
+# Local web server for live image previews (serves repo root)
+# ---------------------------------------------------------------------------
+
+def start_static_server(root_dir, port=8000):
+    handler = partial(SimpleHTTPRequestHandler, directory=root_dir)
+    server = ThreadingHTTPServer(("0.0.0.0", port), handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server
+
+
+def export_live_images(heatmap_surface, avg_grid, canvas_w, canvas_h, output_dir):
+    """Save live heatmap + average 3D surface snapshots for the HTML demo."""
+    if heatmap_surface is None and avg_grid is None:
+        return
+    os.makedirs(output_dir, exist_ok=True)
+    if heatmap_surface is not None:
+        pygame.image.save(heatmap_surface, os.path.join(output_dir, "heatmap.png"))
+    if avg_grid is not None:
+        avg_surface = build_3d_surface_pygame(
+            avg_grid, canvas_w, canvas_h, title="Session Average"
+        )
+        pygame.image.save(avg_surface, os.path.join(output_dir, "avg_3d.png"))
+
+
+# ---------------------------------------------------------------------------
 # End-of-simulation overlay helper (D-13)
 # ---------------------------------------------------------------------------
 
@@ -140,6 +170,13 @@ def scale_factor(map_size):
 # ---------------------------------------------------------------------------
 
 def main():
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    assets_dir = os.path.join(repo_root, "assets")
+    try:
+        server = start_static_server(repo_root, port=8000)
+    except OSError:
+        server = None
+
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_W, WINDOW_H), pygame.SCALED)
     pygame.display.set_caption(WINDOW_TITLE)
@@ -225,6 +262,8 @@ def main():
     # Pause/Resume and Reset buttons (D-11: Pause left of Reset, same row)
     pause_rect  = pygame.Rect(1002, cp_top + 16, 70, 26)
     reset_rect  = pygame.Rect(1080, cp_top + 16, 70, 26)
+
+    last_export_frame = -FPS * 3
 
     running = True
     while running:
@@ -397,6 +436,12 @@ def main():
                     avg_grid, CANVAS_W, CANVAS_H, title="Session Average"
                 )
 
+        # Export live images for the HTML demo every 3 seconds
+        if not paused and sim.frame_count - last_export_frame >= FPS * 3:
+            avg_grid = density_acc / density_ticks if density_ticks > 0 else None
+            export_live_images(heatmap_surface, avg_grid, CANVAS_W, CANVAS_H, assets_dir)
+            last_export_frame = sim.frame_count
+
         # ----------------------------------------------------------------
         # Draw
         # ----------------------------------------------------------------
@@ -548,6 +593,8 @@ def main():
         clock.tick(FPS)
 
     pygame.quit()
+    if server is not None:
+        server.shutdown()
     sys.exit(0)
 
 
