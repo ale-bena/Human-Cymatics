@@ -1,0 +1,138 @@
+/* Sidebar collapse/expand transition */
+#sidebar {
+    width: 56px;
+    overflow: hidden;
+    transition: width 200ms ease;
+    flex-shrink: 0;
+}
+#sidebar.expanded {
+    width: 220px;
+}
+#sidebar .nav-label {
+    opacity: 0;
+    white-space: nowrap;
+    transition: opacity 150ms ease;
+    pointer-events: none;
+}
+#sidebar.expanded .nav-label {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Nav items */
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    margin: 2px 6px;
+    text-decoration: none;
+    color: #94a3b8;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 150ms;
+}
+.nav-item:hover:not(.disabled) {
+    background: #1e293b;
+    color: #e2e8f0;
+}
+.nav-item.active {
+    background: #1e3a5f;
+    color: #60a5fa;
+}
+.nav-item.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+.nav-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    width: 24px;
+    text-align: center;
+}
+
+/* Tab buttons */
+.tab-btn {
+    background: #1e293b;
+    color: #94a3b8;
+    border: none;
+    cursor: pointer;
+    transition: background 150ms, color 150ms;
+    font-size: 13px;
+}
+.tab-btn:hover {
+    background: #334155;
+    color: #e2e8f0;
+}
+.tab-btn.tab-active {
+    background: #2563eb;
+    color: #fff;
+}
+
+/* Filter chips */
+.filter-chip {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    border: 1px solid #334155;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 150ms;
+}
+.filter-chip:hover {
+    background: #1e293b;
+    color: #e2e8f0;
+}
+.filter-chip.active {
+    background: #1e3a5f;
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+/* Alert card fade-in */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.alert-card {
+    animation: fadeInUp 250ms ease;
+}
+
+/* Custom scrollbar for alerts panel */
+#alerts-list::-webkit-scrollbar {
+    width: 4px;
+}
+#alerts-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+#alerts-list::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 2px;
+}
+
+/* Map viewport: fill its parent completely; SVG viewBox handles internal layout */
+#map-viewport {
+    position: absolute;
+    inset: 0;
+}
+#map-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+#heatmap-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    object-fit: fill;
+}
+
+/* Color legend gradient */
+.legend-gradient {
+    background: linear-gradient(to right, #440154, #31688e, #35b779, #fde725);
+}

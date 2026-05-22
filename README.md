@@ -1,3 +1,10 @@
+---
+title: HumanCymatics Safety
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Human Cymatics — Crowd Monitoring Simulator MVP
 
 A local Pygame simulator that demonstrates WiFi-sniffing-based crowd monitoring for events and venues. Built as a pitch demo: investors see in real time how a sniffer network estimates crowd density — and how accurate (or noisy) those estimates are.

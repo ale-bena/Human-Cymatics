@@ -92,11 +92,11 @@ LARGE_MAP = {
 ROOMED_MAP = {
     'size': (1000, 700),
     'rooms': [
-        {'id': 'lobby', 'name': 'Lobby',     'rect': (0,   0,   250, 700)},  # medium
-        {'id': 'hall',  'name': 'Expo Hall', 'rect': (250, 0,   450, 700)},  # largest
-        {'id': 'bar',   'name': 'Bar',       'rect': (700, 0,   300, 280)},  # small-medium
-        {'id': 'vip',   'name': 'VIP',       'rect': (700, 280, 300, 220)},  # small
-        {'id': 'rest',  'name': 'Restrooms', 'rect': (700, 500, 300, 200)},  # smallest
+        {'id': 'lobby', 'name': 'Lobby',     'rect': (0,   0,   250, 700), 'capacity': 60},
+        {'id': 'hall',  'name': 'Expo Hall', 'rect': (250, 0,   450, 700), 'capacity': 80},
+        {'id': 'bar',   'name': 'Bar',       'rect': (700, 0,   300, 280), 'capacity': 30},
+        {'id': 'vip',   'name': 'VIP',       'rect': (700, 280, 300, 220), 'capacity': 25},
+        {'id': 'rest',  'name': 'Restrooms', 'rect': (700, 500, 300, 200), 'capacity': 20},
     ],
     'walls': [
         # Vertical wall lobby <-> hall at x=250 (door gap y=320..380)
@@ -264,4 +264,12 @@ def get_room_center(map_def, room_id):
         if r['id'] == room_id:
             x, y, w, h = r['rect']
             return (x + w // 2, y + h // 2)
+    return None
+
+
+def get_room_capacity(map_def, room_id):
+    """Return capacity of named room, or None if not defined."""
+    for r in map_def.get('rooms', []):
+        if r['id'] == room_id:
+            return r.get('capacity')
     return None

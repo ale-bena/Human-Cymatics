@@ -1,0 +1,67 @@
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+from crowd_mvp.web.state import SimulationManager
+
+_STATIC_DIR = Path(__file__).parent / 'static'
+
+manager = SimulationManager()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await manager.start()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+app.mount('/static', StaticFiles(directory=str(_STATIC_DIR)), name='static')
+
+
+@app.get('/')
+async def index():
+    return FileResponse(str(_STATIC_DIR / 'index.html'))
+
+
+@app.websocket('/ws')
+async def ws_endpoint(ws: WebSocket):
+    await manager.connect(ws)
+    try:
+        while True:
+            await ws.receive_text()
+    except (WebSocketDisconnect, Exception):
+        pass
+    finally:
+        manager.disconnect(ws)
+
+
+@app.post('/sim/pause')
+async def sim_pause():
+    await manager.pause()
+    return {'status': 'paused'}
+
+
+@app.post('/sim/resume')
+async def sim_resume():
+    await manager.resume()
+    return {'status': 'running'}
+
+
+@app.post('/sim/reset')
+async def sim_reset():
+    await manager.reset()
+    return {'status': 'reset'}
+
+
+@app.post('/sim/scenario/{name}')
+async def sim_scenario(name: str):
+    try:
+        await manager.load_scenario(name)
+    except ValueError as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=str(e))
+    return {'status': 'ok', 'scenario': name}
