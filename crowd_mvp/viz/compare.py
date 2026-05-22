@@ -16,9 +16,7 @@
 
 import pygame
 import numpy as np
-from matplotlib import colormaps
-
-_VIRIDIS = colormaps['viridis']
+from crowd_mvp.viz.colormaps import VIRIDIS as _VIRIDIS
 
 # Minimum normalisation max so single-count zones show some colour (not 0/0)
 _NORM_FLOOR = 1
@@ -103,8 +101,8 @@ def build_compare_panels(
 def _viridis_colour(norm):
     """Map [0,1] float to an RGB tuple via viridis."""
     norm = max(0.0, min(1.0, norm))
-    r, g, b, _ = _VIRIDIS(norm)
-    return (int(r * 255), int(g * 255), int(b * 255))
+    r, g, b = _VIRIDIS(norm)
+    return (r, g, b)
 
 
 def _draw_zone_label(surface, font, text, cx, cy, zone_col):

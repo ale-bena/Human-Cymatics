@@ -5,7 +5,7 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import asyncio
 
 import pygame
 
@@ -139,7 +139,7 @@ def scale_factor(map_size):
 # Main
 # ---------------------------------------------------------------------------
 
-def main():
+async def main():
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_W, WINDOW_H))
     pygame.display.set_caption(WINDOW_TITLE)
@@ -477,11 +477,11 @@ def main():
         screen.blit(st_surf, (4, STATUS_RECT.y + 3))
 
         pygame.display.flip()
+        await asyncio.sleep(0)  # yield to browser each frame (Pygbag/WASM)
         clock.tick(FPS)
 
     pygame.quit()
-    sys.exit(0)
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
