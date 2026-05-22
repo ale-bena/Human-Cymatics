@@ -1,33 +1,52 @@
 # crowd_mvp/people.py
-# Agent class: wanderer behavior with POI steering and boundary clamping.
-# SIM-01: agent has position (x,y), velocity, behavior (always Wanderer in Phase 1).
-# SIM-02: random walk with POI attraction; changes target every N seconds.
-# SIM-05: agents stay within map boundary — no internal walls, just edge clamping.
+# Agent classes with waypoint-based navigation through rooms and doors.
+# When a map defines rooms/walls/doors, agents A*-route via door waypoints
+# and clip movement at walls — producing organic congestion at narrow doors.
+# When a map has no rooms (legacy S/M/L), agents fall back to single-waypoint
+# POI seeking with boundary clamping — same behavior as before.
 
 import numpy as np
 from crowd_mvp.config import (
     AGENT_SPEED, AGENT_NOISE, AGENT_RADIUS,
     ARRIVAL_THRESHOLD, DWELL_MIN_FRAMES, DWELL_MAX_FRAMES
 )
+from crowd_mvp.maps import find_room_for_point
+from crowd_mvp.navigation import astar, build_waypoints, clip_to_walls
+
+
+# Tighter arrival threshold for door waypoints — narrow doors need a small
+# acceptance radius so agents commit to passing through rather than orbiting.
+_DOOR_ARRIVAL_THRESHOLD = 6.0
 
 
 class Agent:
-    """Single simulated person. Phase 1 behavior: Wanderer.
+    """Single simulated person — Wanderer behavior.
+
+    Movement model:
+      - Pick random POI -> A* over room graph -> list of door waypoints + POI.
+      - Steer toward current waypoint; on arrival at door, advance to next.
+      - On arrival at final waypoint (POI), dwell 1-3s then repick.
+      - Each frame, candidate movement is clipped against walls.
 
     Attributes:
-        pos (np.ndarray): float32 [x, y] position in map pixels
-        vel (np.ndarray): float32 [vx, vy] current velocity
-        target_pos (np.ndarray): float32 [x, y] current POI target
-        dwell_frames (int): frames remaining to dwell at current POI (0 = moving)
-        radius (int): render radius in pixels
+        pos (np.ndarray):        float32 [x, y] in map pixels
+        vel (np.ndarray):        float32 [vx, vy]
+        waypoints (list):        list of (x, y) tuples ending at target POI
+        waypoint_idx (int):      index of the current waypoint
+        dwell_frames (int):      frames remaining to dwell at final POI
     """
 
-    def __init__(self, spawn_pos, poi_list, map_size):
+    def __init__(self, spawn_pos, poi_list, map_size,
+                 room_graph=None, walls=None, room_centers=None, map_def=None):
         """
         Args:
-            spawn_pos: (x, y) tuple — starting position (D-04: entrance POI position)
-            poi_list:  list of dicts with 'pos' key — all POI on the map
-            map_size:  (width, height) tuple — map boundary
+            spawn_pos: (x, y) starting position
+            poi_list:  list of POI dicts with 'pos' key
+            map_size:  (width, height) tuple
+            room_graph: adjacency dict from maps.build_room_graph, or None
+            walls:      list of wall segment dicts, or None
+            room_centers: {room_id: (cx, cy)} for A* heuristic, or None
+            map_def:    map definition dict (needed for find_room_for_point)
         """
         self.pos = np.array(spawn_pos, dtype=np.float32)
         self.vel = np.zeros(2, dtype=np.float32)
@@ -35,56 +54,106 @@ class Agent:
         self.map_w, self.map_h = map_size
         self.radius = AGENT_RADIUS
         self.dwell_frames = 0
-        self.target_pos = self._pick_random_poi()
 
-        # Position history for Tab 3 trajectory rendering (D-07).
-        # Populated only when track=True is passed at construction.
+        self._room_graph = room_graph or {}
+        self._walls = walls or []
+        self._room_centers = room_centers or {}
+        self._map_def = map_def
+
+        self.waypoints = []
+        self.waypoint_idx = 0
+
+        # Tracking (D-07)
         self._track = False
-        self.pos_history = []  # list of (x, y) int tuples, appended each frame when tracking
+        self.pos_history = []
+
+        self._pick_new_target()
 
     def _pick_random_poi(self):
-        """Pick a random POI position from the poi_list."""
         idx = np.random.randint(0, len(self.poi_list))
-        return np.array(self.poi_list[idx]['pos'], dtype=np.float32)
+        return self.poi_list[idx]
+
+    def _pick_new_target(self):
+        """Choose a new POI and plan a waypoint path to it."""
+        target_poi = self._pick_random_poi()
+        target_pos = target_poi['pos']
+        self.waypoints = self._plan_path(target_pos)
+        self.waypoint_idx = 0
+
+    def _plan_path(self, target_pos):
+        """Build a list of (x, y) waypoints from current pos through doors to target_pos.
+
+        Falls back to a single waypoint (target_pos) when the map has no rooms.
+        """
+        if not self._room_graph or not self._map_def:
+            return [(float(target_pos[0]), float(target_pos[1]))]
+        start_room = find_room_for_point(self._map_def, float(self.pos[0]), float(self.pos[1]))
+        end_room = find_room_for_point(self._map_def, float(target_pos[0]), float(target_pos[1]))
+        if start_room is None or end_room is None:
+            return [(float(target_pos[0]), float(target_pos[1]))]
+        path = astar(self._room_graph, start_room, end_room, self._room_centers)
+        if not path:
+            return [(float(target_pos[0]), float(target_pos[1]))]
+        return build_waypoints(path, self._room_graph, target_pos)
+
+    @property
+    def target_pos(self):
+        """Current immediate target — a door center or the final POI."""
+        if self.waypoints and self.waypoint_idx < len(self.waypoints):
+            return np.array(self.waypoints[self.waypoint_idx], dtype=np.float32)
+        return self.pos.copy()
 
     def update(self):
-        """Advance agent one frame. Called once per frame by Simulation.update().
-
-        Wanderer logic (D-01, D-02):
-          - If dwelling: decrement dwell counter, stay put.
-          - If moving: steer toward target POI.
-            velocity = normalize(target - pos) * AGENT_SPEED + noise
-          - On arrival (distance < ARRIVAL_THRESHOLD): start dwell, then re-target (D-03).
-          - Position clamped to map boundary after move (SIM-05).
-        """
+        """Advance one frame."""
         if self.dwell_frames > 0:
             self.dwell_frames -= 1
             if self.dwell_frames == 0:
-                self.target_pos = self._pick_random_poi()
+                self._pick_new_target()
             if self._track:
                 self.pos_history.append((int(self.pos[0]), int(self.pos[1])))
             return
 
-        # Steering toward target (D-01)
-        direction = self.target_pos - self.pos
-        dist = np.linalg.norm(direction)
+        if not self.waypoints or self.waypoint_idx >= len(self.waypoints):
+            self._pick_new_target()
 
-        if dist < ARRIVAL_THRESHOLD:
-            # Arrived — dwell for 1–3 seconds (D-03)
-            self.dwell_frames = np.random.randint(DWELL_MIN_FRAMES, DWELL_MAX_FRAMES + 1)
-            self.vel = np.zeros(2, dtype=np.float32)
+        wp = self.waypoints[self.waypoint_idx]
+        target = np.array(wp, dtype=np.float32)
+        direction = target - self.pos
+        dist = float(np.linalg.norm(direction))
+
+        is_final = (self.waypoint_idx == len(self.waypoints) - 1)
+        threshold = ARRIVAL_THRESHOLD if is_final else _DOOR_ARRIVAL_THRESHOLD
+
+        if dist < threshold:
+            if is_final:
+                self.dwell_frames = np.random.randint(DWELL_MIN_FRAMES, DWELL_MAX_FRAMES + 1)
+                self.vel = np.zeros(2, dtype=np.float32)
+            else:
+                self.waypoint_idx += 1
+            if self._track:
+                self.pos_history.append((int(self.pos[0]), int(self.pos[1])))
+            return
+
+        # Steer toward current waypoint with noise
+        unit = direction / dist
+        noise = np.random.uniform(-AGENT_NOISE, AGENT_NOISE, size=2).astype(np.float32)
+        self.vel = unit * AGENT_SPEED + noise
+        intended = (float(self.pos[0] + self.vel[0]), float(self.pos[1] + self.vel[1]))
+
+        if self._walls:
+            new_pos = clip_to_walls(
+                (float(self.pos[0]), float(self.pos[1])), intended, self._walls
+            )
+            self.pos[0] = new_pos[0]
+            self.pos[1] = new_pos[1]
         else:
-            # Normalise + scale + noise (D-02)
-            unit = direction / dist
-            noise = np.random.uniform(-AGENT_NOISE, AGENT_NOISE, size=2).astype(np.float32)
-            self.vel = unit * AGENT_SPEED + noise
-            self.pos += self.vel
+            self.pos[0] = intended[0]
+            self.pos[1] = intended[1]
 
-        # Record position if tracking enabled (D-07)
         if self._track:
             self.pos_history.append((int(self.pos[0]), int(self.pos[1])))
 
-        # Boundary clamping — keep agent inside map (SIM-05)
+        # Boundary clamp (SIM-05)
         self.pos[0] = np.clip(self.pos[0], self.radius, self.map_w - self.radius)
         self.pos[1] = np.clip(self.pos[1], self.radius, self.map_h - self.radius)
 
@@ -100,95 +169,77 @@ class Agent:
 class GoalAgent(Agent):
     """Goal-oriented agent (SIM-03, D-06).
 
-    Identical movement mechanics to Agent (Wanderer) but picks only
-    'bar', 'sponsor_stand', or 'bathroom' POI as targets — never
-    entrance/exit. This concentrates agents around venue features,
-    producing visible POI clustering in the heatmap (D-08).
+    Identical movement mechanics to Agent (waypoint navigation + wall clip),
+    but only picks bar/sponsor_stand/bathroom POIs. Skips entrance/exit so the
+    crowd concentrates around venue features.
     """
 
     _GOAL_CATEGORIES = ('bar', 'sponsor_stand', 'bathroom')
 
-    def __init__(self, spawn_pos, poi_list, map_size):
-        # Filter poi_list to goal categories before super().__init__
-        # so that _pick_random_poi() override works during super().__init__.
+    def __init__(self, spawn_pos, poi_list, map_size,
+                 room_graph=None, walls=None, room_centers=None, map_def=None):
         self._goal_pois = [p for p in poi_list if p['category'] in self._GOAL_CATEGORIES]
         if not self._goal_pois:
-            # Fallback: use full poi_list if no goal POIs defined
             self._goal_pois = list(poi_list)
-        super().__init__(spawn_pos, poi_list, map_size)
-        # target_pos is already set to a goal POI via _pick_random_poi() override above
-
-    def _pick_goal_poi(self):
-        """Pick a random goal-category POI."""
-        idx = np.random.randint(0, len(self._goal_pois))
-        return np.array(self._goal_pois[idx]['pos'], dtype=np.float32)
+        super().__init__(spawn_pos, poi_list, map_size,
+                         room_graph=room_graph, walls=walls,
+                         room_centers=room_centers, map_def=map_def)
 
     def _pick_random_poi(self):
-        """Override: always pick from goal POIs, not all POIs."""
-        return self._pick_goal_poi()
+        idx = np.random.randint(0, len(self._goal_pois))
+        return self._goal_pois[idx]
 
 
 class SocialAgent(Agent):
-    """Social/clusterer agent (SIM-04, D-07).
+    """Cluster-following agent (SIM-04, D-07).
 
-    Steers toward the centroid of its K nearest neighbours.
-    Does NOT override update() — call update_social(agents) each frame.
-    Retains random jitter so agents stay dynamic and don't freeze.
+    Steers toward the centroid of K nearest neighbors (no POI seeking, no
+    A*). Still respects walls via clip_to_walls so clusters don't tunnel
+    through architecture.
     """
 
     K_NEIGHBOURS = 10
 
-    def __init__(self, spawn_pos, poi_list, map_size):
-        super().__init__(spawn_pos, poi_list, map_size)
-
     def update_social(self, agents):
-        """Advance one frame using social steering (D-07).
-
-        Args:
-            agents: full list of Agent-like instances in the simulation.
-                    Self is expected to be in this list.
-
-        Behaviour:
-          1. Collect positions of all other agents.
-          2. Compute Euclidean distances from self.pos.
-          3. Take K nearest (excluding self).
-          4. Steer toward their centroid + random jitter.
-          5. Clamp to map boundary.
-        """
-        # Build position matrix — exclude self
         others = [a for a in agents if a is not self]
         if not others:
-            return  # only agent, stay put
+            return
 
-        positions = np.array([a.pos for a in others], dtype=np.float32)  # (N-1, 2)
-        diffs = positions - self.pos  # (N-1, 2)
-        dists = np.linalg.norm(diffs, axis=1)  # (N-1,)
-
+        positions = np.array([a.pos for a in others], dtype=np.float32)
+        diffs = positions - self.pos
+        dists = np.linalg.norm(diffs, axis=1)
         k = min(self.K_NEIGHBOURS, len(others))
         nearest_idx = np.argpartition(dists, k - 1)[:k]
         centroid = positions[nearest_idx].mean(axis=0)
 
         direction = centroid - self.pos
-        dist = np.linalg.norm(direction)
+        dist = float(np.linalg.norm(direction))
 
         if dist > 1.0:
             unit = direction / dist
             jitter = np.random.uniform(-AGENT_NOISE * 2, AGENT_NOISE * 2, size=2).astype(np.float32)
-            self.vel = unit * AGENT_SPEED * 0.6 + jitter  # slower convergence — D-07 clusters stay tight
-            self.pos += self.vel
+            self.vel = unit * AGENT_SPEED * 0.6 + jitter
+            intended = (float(self.pos[0] + self.vel[0]), float(self.pos[1] + self.vel[1]))
         else:
-            # Arrived at centroid — add jitter only
             jitter = np.random.uniform(-AGENT_NOISE * 3, AGENT_NOISE * 3, size=2).astype(np.float32)
-            self.pos += jitter
+            intended = (float(self.pos[0] + jitter[0]), float(self.pos[1] + jitter[1]))
 
-        # Boundary clamp (SIM-05)
+        if self._walls:
+            new_pos = clip_to_walls(
+                (float(self.pos[0]), float(self.pos[1])), intended, self._walls
+            )
+            self.pos[0] = new_pos[0]
+            self.pos[1] = new_pos[1]
+        else:
+            self.pos[0] = intended[0]
+            self.pos[1] = intended[1]
+
         self.pos[0] = np.clip(self.pos[0], self.radius, self.map_w - self.radius)
         self.pos[1] = np.clip(self.pos[1], self.radius, self.map_h - self.radius)
 
-        # Record position if tracking enabled
         if self._track:
             self.pos_history.append((int(self.pos[0]), int(self.pos[1])))
 
 
-# Alias for clarity in simulation.py import
+# Alias for clarity in simulation.py imports
 WandererAgent = Agent

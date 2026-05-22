@@ -21,8 +21,9 @@ from crowd_mvp.config import (
     COLOUR_BTN_ACTIVE, COLOUR_BTN_INACTIVE,
     COLOUR_CONTROL_BG, COLOUR_SLIDER_TRACK, COLOUR_SLIDER_THUMB,
 )
-from crowd_mvp.maps import SMALL_MAP, MEDIUM_MAP, LARGE_MAP, ALL_MAPS
+from crowd_mvp.maps import SMALL_MAP, MEDIUM_MAP, LARGE_MAP, ROOMED_MAP, ALL_MAPS
 from crowd_mvp.simulation import Simulation
+from crowd_mvp import render
 from crowd_mvp.viz.heatmap import build_heatmap_surface
 from crowd_mvp.viz.compare import build_compare_panels
 from crowd_mvp.viz.traffic import build_traffic_panels
@@ -192,19 +193,20 @@ def main():
     cp_top = CANVAS_H + TAB_BAR_H   # absolute y of control panel top
     cp_mid = cp_top + CONTROL_PANEL_H // 2
 
-    # Map buttons [S][M][L] — left group
+    # Map buttons [S][M][L][R] — left group (22w each to fit 4 in the same span)
     map_btn_rects = {
-        'S': pygame.Rect(10,  cp_top + 8, 28, 22),
-        'M': pygame.Rect(42,  cp_top + 8, 28, 22),
-        'L': pygame.Rect(74,  cp_top + 8, 28, 22),
+        'S': pygame.Rect(10,  cp_top + 8, 22, 22),
+        'M': pygame.Rect(36,  cp_top + 8, 22, 22),
+        'L': pygame.Rect(62,  cp_top + 8, 22, 22),
+        'R': pygame.Rect(88,  cp_top + 8, 22, 22),
     }
     map_label_rect = pygame.Rect(10, cp_top + 2, 60, 12)
 
     # Behavior buttons [W][G][C]
     beh_btn_rects = {
-        'wanderer': pygame.Rect(122, cp_top + 8, 28, 22),
-        'goal':     pygame.Rect(154, cp_top + 8, 28, 22),
-        'social':   pygame.Rect(186, cp_top + 8, 28, 22),
+        'wanderer': pygame.Rect(122, cp_top + 8, 22, 22),
+        'goal':     pygame.Rect(148, cp_top + 8, 22, 22),
+        'social':   pygame.Rect(174, cp_top + 8, 22, 22),
     }
 
     # Sliders — horizontal layout in remaining 1200 - 220 - 80 = 900px, split 3 ways
@@ -349,13 +351,13 @@ def main():
 
         # --- Left panel: simulation scaled to fit canvas (D-05) ---
         left_surf = screen.subsurface(LEFT_PANEL_RECT)
-        sim.draw_scaled(left_surf, CANVAS_W, CANVAS_H)
+        render.draw_scene(left_surf, sim, CANVAS_W, CANVAS_H)
 
         # --- Right panel: map underlay + KDE heatmap (D-17) ---
         right_surf = screen.subsurface(RIGHT_PANEL_RECT)
         if active_tab == 1:
-            # Layer 1: plain map (zones + POI only, no agents/sniffers)
-            sim.draw_map_scaled(right_surf, CANVAS_W, CANVAS_H)
+            # Layer 1: plain map (rooms/zones + walls/doors + POI, no agents)
+            render.draw_map_scaled(right_surf, sim.map_def, CANVAS_W, CANVAS_H)
 
             # Layer 2: heatmap at 70% opacity blended over the map
             HEATMAP_ALPHA = 178  # 70% of 255
