@@ -3,8 +3,11 @@ import json
 import time
 from typing import Set
 
+import numpy as np
+
 from crowd_mvp.maps import ROOMED_MAP
 from crowd_mvp.simulation import Simulation
+from crowd_mvp.viz.heatmap import _compute_density, _GRID_W, _GRID_H
 from crowd_mvp.web.alerts import AlertEngine
 from crowd_mvp.web.heatmap_png import kde_to_b64, estimate_to_b64
 from crowd_mvp.web.scenarios import SCENARIOS
@@ -91,6 +94,9 @@ class SimulationManager:
         kde_b64 = kde_to_b64(agents_xy, sim.map_size)
         est_b64 = estimate_to_b64(sim.map_def, est)
 
+        # Density grid for Plotly 3-D surface (40 rows × 60 cols, float [0,1])
+        density_grid = _build_density_grid(agents_xy, sim.map_size)
+
         payload = {
             't': snap['elapsed_s'],
             'running': not self._paused,
@@ -102,6 +108,7 @@ class SimulationManager:
             'kde_png_b64': kde_b64,
             'estimate_png_b64': est_b64,
             'alerts': [a.to_dict() for a in alerts],
+            'density_grid': density_grid,
         }
         self._last_snapshot = payload
 
@@ -221,3 +228,23 @@ def _doors_payload(map_def: dict, door_flow: dict) -> list:
         }
         for d in map_def.get('doors', [])
     ]
+
+
+def _build_density_grid(agent_positions: list, map_size: tuple, sigma_kernel: float = 60.0) -> list:
+    """Return a normalized (_GRID_H × _GRID_W) list-of-lists for Plotly surface.
+
+    Values are in [0, 1]; rounded to 3 decimal places to keep WS payload small.
+    """
+    if not agent_positions:
+        return [[0.0] * _GRID_W for _ in range(_GRID_H)]
+
+    weights = [1.0] * len(agent_positions)
+    density = _compute_density(agent_positions, weights, map_size[0], map_size[1], sigma_kernel)
+
+    d_min, d_max = float(density.min()), float(density.max())
+    if d_max > d_min:
+        normed = (density - d_min) / (d_max - d_min)
+    else:
+        normed = np.zeros_like(density)
+
+    return np.round(normed, 3).tolist()

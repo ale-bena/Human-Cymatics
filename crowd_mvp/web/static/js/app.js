@@ -2,7 +2,6 @@
 
 const state = {
     tab: 'kde',
-    filter: 'all',
     running: true,
     geometry: null,
     lastKde: '',
@@ -11,13 +10,18 @@ const state = {
 };
 
 const SCENARIO_N_PEOPLE = {
-    baseline: 50,
-    concert_peak: 200,
-    evacuation_drill: 150,
+    baseline:         150,
+    concert_peak:     300,
+    evacuation_drill: 200,
 };
 
 let ws = null;
 let reconnectTimer = null;
+
+// ── Lazy singletons ─────────────────────────────────────────────────────────
+// Initialised once after the first geometry message arrives.
+let _surfaceInitialised = false;
+let _trajectory = null;
 
 // ------------------------------------------------------------------
 // WebSocket
@@ -32,9 +36,16 @@ function connect() {
     ws.onmessage = ({ data }) => {
         let msg;
         try { msg = JSON.parse(data); } catch { return; }
+
         if (msg.type === 'geometry') {
             state.geometry = msg;
             renderGeometry(msg);
+            _initPanels(msg);
+            // Reset trajectory + surface when map changes (scenario/reset)
+            if (_trajectory) _trajectory.reset();
+            if (_surfaceInitialised) {
+                resetSurface('surface-div');
+            }
         } else {
             updateFromSnapshot(msg);
         }
@@ -48,6 +59,24 @@ function connect() {
     ws.onerror = () => ws.close();
 }
 
+// ── One-time panel initialisation ───────────────────────────────────────────
+function _initPanels(geometry) {
+    // 3-D surface
+    if (!_surfaceInitialised) {
+        initSurface('surface-div');
+        _surfaceInitialised = true;
+    }
+
+    // Trajectory canvas
+    if (!_trajectory) {
+        const canvas = document.getElementById('trajectory-canvas');
+        if (canvas && geometry.map_size) {
+            const [mW, mH] = geometry.map_size;
+            _trajectory = new TrajectoryCanvas(canvas, mW, mH);
+        }
+    }
+}
+
 // ------------------------------------------------------------------
 // Snapshot handler
 // ------------------------------------------------------------------
@@ -59,18 +88,30 @@ function updateFromSnapshot(snap) {
     state.running = snap.running;
     document.getElementById('btn-pause').classList.toggle('hidden', !snap.running);
     document.getElementById('btn-resume').classList.toggle('hidden', snap.running);
+    document.getElementById('btn-resume').classList.toggle('flex', !snap.running);
 
-    // Agents + heatmap
+    // Map agents + heatmap overlay
     updateAgents(snap.agents);
-
     state.lastKde = snap.kde_png_b64 || '';
     state.lastEst = snap.estimate_png_b64 || '';
     updateHeatmapOverlay();
 
+    // 3-D surface
+    if (snap.density_grid && _surfaceInitialised) {
+        updateSurface('surface-div', snap.density_grid);
+    }
+
+    // Trajectory accumulation
+    if (_trajectory && snap.agents && snap.agents.length) {
+        _trajectory.addAgents(snap.agents);
+        _trajectory.render();
+    }
+
     // Scenario label + sync dropdown
     const scenarioLabel = document.getElementById('scenario-name');
     if (scenarioLabel) {
-        scenarioLabel.textContent = snap.scenario.replace(/_/g, ' ')
+        scenarioLabel.textContent = snap.scenario
+            .replace(/_/g, ' ')
             .replace(/\b\w/g, c => c.toUpperCase());
     }
     const sel = document.getElementById('scenario-select');
@@ -86,8 +127,7 @@ function updateFromSnapshot(snap) {
     // Status bar
     document.getElementById('status-agents').textContent = `${snap.agents.length} agents`;
 
-    // Alerts
-    renderAlerts(snap.alerts || [], state.filter);
+    // Alerts — no panel in this layout; skip rendering
 }
 
 function updateHeatmapOverlay() {
@@ -97,7 +137,7 @@ function updateHeatmapOverlay() {
 }
 
 // ------------------------------------------------------------------
-// Tabs
+// Tabs (KDE / WiFi Estimate)
 // ------------------------------------------------------------------
 document.getElementById('tab-kde').addEventListener('click', () => {
     state.tab = 'kde';
@@ -119,48 +159,35 @@ function setTabActive(tab) {
 // ------------------------------------------------------------------
 document.getElementById('btn-pause').addEventListener('click', () =>
     fetch('/sim/pause', { method: 'POST' }));
+
 document.getElementById('btn-resume').addEventListener('click', () =>
     fetch('/sim/resume', { method: 'POST' }));
+
 document.getElementById('btn-reset').addEventListener('click', () => {
-    const n = parseInt(document.getElementById('n-people-input')?.value || 50, 10);
+    const n = parseInt(document.getElementById('n-people-input')?.value || 150, 10);
     const clamped = Math.max(10, Math.min(700, n));
     state.firstSnapshot = true;
+    // Reset trajectory immediately on UI side for snappy feedback
+    if (_trajectory) _trajectory.reset();
     fetch(`/sim/reset?n_people=${clamped}`, { method: 'POST' });
 });
+
 document.getElementById('scenario-select').addEventListener('change', e => {
     const scenario = e.target.value;
     const inp = document.getElementById('n-people-input');
     if (inp && SCENARIO_N_PEOPLE[scenario] != null) inp.value = SCENARIO_N_PEOPLE[scenario];
+    if (_trajectory) _trajectory.reset();
     fetch(`/sim/scenario/${scenario}`, { method: 'POST' });
 });
 
 // ------------------------------------------------------------------
-// Hamburger
-// ------------------------------------------------------------------
-document.getElementById('hamburger-btn').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('expanded');
-});
-
-// ------------------------------------------------------------------
-// Filter chips
-// ------------------------------------------------------------------
-document.querySelectorAll('.filter-chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.filter = btn.dataset.filter;
-        renderAlerts(getLastAlerts(), state.filter);
-    });
-});
-
-// ------------------------------------------------------------------
-// Status bar helpers
+// Status helpers
 // ------------------------------------------------------------------
 function setStatus(status) {
     const el = document.getElementById('status-conn');
     if (!el) return;
     el.textContent = status === 'connected' ? '● Connected' : '○ Reconnecting…';
-    el.className = status === 'connected' ? 'text-green-500' : 'text-slate-500';
+    el.className   = status === 'connected' ? 'text-xs text-green-500' : 'text-xs text-slate-500';
 }
 
 // ------------------------------------------------------------------

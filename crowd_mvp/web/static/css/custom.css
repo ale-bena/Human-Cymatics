@@ -1,55 +1,33 @@
-/* Sidebar collapse/expand transition */
-#sidebar {
-    width: 56px;
-    overflow: hidden;
-    transition: width 200ms ease;
-    flex-shrink: 0;
-}
-#sidebar.expanded {
-    width: 220px;
-}
-#sidebar .nav-label {
-    opacity: 0;
-    white-space: nowrap;
-    transition: opacity 150ms ease;
-    pointer-events: none;
-}
-#sidebar.expanded .nav-label {
-    opacity: 1;
-    pointer-events: auto;
+/* ── 3-panel presentation grid ──────────────────────────────────────────── */
+.demo-grid {
+    display: grid;
+    grid-template-columns: 58% 42%;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas:
+        "map surface"
+        "map trajectory";
 }
 
-/* Nav items */
-.nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    border-radius: 6px;
-    margin: 2px 6px;
-    text-decoration: none;
-    color: #94a3b8;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background 150ms;
+.panel-a { grid-area: map; }
+.panel-b { grid-area: surface; }
+.panel-c { grid-area: trajectory; }
+
+/* Panel title label */
+.panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #475569;
 }
-.nav-item:hover:not(.disabled) {
-    background: #1e293b;
-    color: #e2e8f0;
-}
-.nav-item.active {
-    background: #1e3a5f;
-    color: #60a5fa;
-}
-.nav-item.disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-.nav-icon {
-    font-size: 18px;
-    flex-shrink: 0;
-    width: 24px;
-    text-align: center;
+
+/* ── Trajectory canvas — fills its container while keeping aspect ratio ── */
+.trajectory-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 /* Tab buttons */
