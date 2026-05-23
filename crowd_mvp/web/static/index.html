@@ -5,77 +5,99 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HumanCymatics — Crowd Intelligence</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Plotly.js for 3-D surface — loaded before our scripts -->
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
     <link rel="stylesheet" href="/static/css/custom.css">
-    <style>
-        body { background: #0b0f1a; }
-    </style>
 </head>
-<body class="text-slate-100 h-screen flex flex-col overflow-hidden select-none">
+<body class="bg-white text-gray-900 h-screen flex flex-col overflow-hidden select-none">
 
     <!-- ── Top bar ──────────────────────────────────────────────────────── -->
-    <header class="h-12 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 z-10">
-        <!-- Brand -->
+    <header class="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-5 shrink-0 z-10">
         <div class="flex items-center gap-2.5">
-            <span class="font-bold text-sm tracking-tight text-slate-100">HumanCymatics</span>
-            <span class="text-xs bg-indigo-900 text-indigo-300 px-2 py-0.5 rounded-full font-medium">Crowd Intelligence</span>
+            <span class="font-bold text-sm tracking-tight text-gray-900">HumanCymatics</span>
+            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Crowd Intelligence</span>
         </div>
 
-        <!-- Controls -->
         <div class="flex items-center gap-2">
             <select id="scenario-select"
-                    class="bg-slate-800 text-slate-200 text-xs border border-slate-700 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer">
+                    class="bg-white text-gray-700 text-xs border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer">
                 <option value="baseline">Baseline</option>
                 <option value="concert_peak">Concert Peak</option>
                 <option value="evacuation_drill">Evacuation Drill</option>
             </select>
-            <div class="flex items-center gap-1" title="Agent count — applies on Reset">
+            <div class="flex items-center gap-1">
                 <input type="number" id="n-people-input"
                        min="10" max="700" value="150"
-                       class="bg-slate-800 text-slate-200 text-xs border border-slate-700 rounded px-2 py-1.5 w-16 text-center focus:outline-none focus:border-blue-500">
-                <span class="text-slate-500 text-xs">ppl</span>
+                       class="bg-white text-gray-700 text-xs border border-gray-300 rounded px-2 py-1.5 w-16 text-center focus:outline-none focus:border-blue-500">
+                <span class="text-gray-400 text-xs">ppl</span>
             </div>
             <button id="btn-pause"
-                    class="flex items-center gap-1 px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-xs transition-colors">
+                    class="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors border border-gray-200">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><rect x="5" y="4" width="3" height="12" rx="1"/><rect x="12" y="4" width="3" height="12" rx="1"/></svg>
                 Pause
             </button>
             <button id="btn-resume"
-                    class="hidden items-center gap-1 px-2.5 py-1.5 bg-green-700 hover:bg-green-600 text-white rounded text-xs transition-colors">
+                    class="hidden items-center gap-1 px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs transition-colors">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.3 2.84A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.27l9.344-5.891a1.5 1.5 0 000-2.54L6.3 2.84z"/></svg>
                 Resume
             </button>
             <button id="btn-reset"
-                    class="flex items-center gap-1 px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-xs transition-colors">
+                    class="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors border border-gray-200">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
                 Reset
             </button>
-            <div id="sim-time" class="font-mono text-xs text-slate-400 w-16 text-right">t: 0.0s</div>
+            <div id="sim-time" class="font-mono text-xs text-gray-400 w-16 text-right">t: 0.0s</div>
         </div>
     </header>
 
-    <!-- ── 3-panel demo grid ─────────────────────────────────────────────── -->
-    <div class="demo-grid flex-1 overflow-hidden p-2 gap-2">
+    <!-- ── Tab bar ──────────────────────────────────────────────────────── -->
+    <nav class="bg-white border-b border-gray-200 flex items-center px-5 shrink-0">
+        <button id="tab-btn-map"
+                class="main-tab main-tab-active"
+                onclick="showTab('map')">
+            <svg class="w-4 h-4 mr-1.5 inline-block" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="16" height="14" rx="1.5"/><path d="M2 7h16"/><path d="M7 7v10"/></svg>
+            Live Map
+        </button>
+        <button id="tab-btn-surface"
+                class="main-tab"
+                onclick="showTab('surface')">
+            <svg class="w-4 h-4 mr-1.5 inline-block" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 16 L7 8 L11 12 L14 6 L18 10"/><path d="M2 16h16"/></svg>
+            3D Density Surface
+        </button>
+        <button id="tab-btn-path"
+                class="main-tab"
+                onclick="showTab('path')">
+            <svg class="w-4 h-4 mr-1.5 inline-block" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="15" r="2"/><circle cx="15" cy="5" r="2"/><path d="M5 15 C 5 8, 15 12, 15 5" stroke-dasharray="3 2"/></svg>
+            Path Heatmap
+        </button>
 
-        <!-- Panel A · Live Crowd Density map + heatmap overlay -->
-        <div class="panel-a rounded-xl bg-slate-900 border border-slate-800 overflow-hidden relative flex flex-col">
-            <!-- Panel header row -->
-            <div class="flex items-center gap-3 px-3 py-2 shrink-0 border-b border-slate-800">
-                <span class="panel-title">Live Crowd Density</span>
-                <!-- KDE / WiFi tab toggle -->
-                <div class="flex rounded overflow-hidden border border-slate-700 ml-auto">
-                    <button id="tab-kde" class="tab-btn tab-active px-3 py-1 text-xs">KDE</button>
-                    <button id="tab-est" class="tab-btn px-3 py-1 text-xs">WiFi Estimate</button>
+        <!-- right-side info -->
+        <div class="ml-auto flex items-center gap-3 text-xs text-gray-400">
+            <span id="status-agents">0 agents</span>
+            <span id="scenario-name" class="text-gray-500 font-medium"></span>
+        </div>
+    </nav>
+
+    <!-- ── Tab panels ───────────────────────────────────────────────────── -->
+    <div class="flex-1 overflow-hidden relative">
+
+        <!-- ── Panel: Live Map ─────────────────────────────────────────── -->
+        <div id="panel-map" class="tab-panel active h-full flex flex-col">
+            <!-- KDE / WiFi sub-tab row -->
+            <div class="shrink-0 px-5 py-2 border-b border-gray-100 flex items-center gap-3">
+                <div class="flex rounded-md overflow-hidden border border-gray-200">
+                    <button id="tab-kde" class="subtab subtab-active px-3 py-1 text-xs">KDE Heatmap</button>
+                    <button id="tab-est" class="subtab          px-3 py-1 text-xs">WiFi Estimate</button>
                 </div>
-                <!-- Scenario label -->
-                <span id="scenario-name" class="text-slate-500 text-xs font-medium"></span>
+                <span class="text-xs text-gray-400 ml-auto">Low</span>
+                <div class="legend-gradient h-2 w-24 rounded-full"></div>
+                <span class="text-xs text-gray-400">High</span>
+                <span class="text-xs text-gray-300 ml-4">Viridis density scale</span>
             </div>
-            <!-- Map -->
-            <div class="flex-1 relative overflow-hidden">
+
+            <!-- Map fills remaining space; dark bg so floor plan pops -->
+            <div class="flex-1 relative overflow-hidden bg-[#0d1424]">
                 <div id="map-viewport">
-                    <svg id="map-svg" viewBox="0 0 1000 700"
-                         xmlns="http://www.w3.org/2000/svg">
+                    <svg id="map-svg" viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg">
                         <g id="layer-rooms"></g>
                         <image id="heatmap-overlay" x="0" y="0" width="1000" height="700"
                                href="" opacity="0.82" preserveAspectRatio="none"/>
@@ -88,33 +110,32 @@
                     </svg>
                 </div>
             </div>
-            <!-- Legend -->
-            <div class="flex items-center gap-2 px-3 py-1.5 shrink-0 border-t border-slate-800">
-                <span class="text-xs text-slate-600">Low</span>
-                <div class="legend-gradient h-1.5 w-24 rounded-full"></div>
-                <span class="text-xs text-slate-600">High</span>
-                <span class="text-xs text-slate-700 ml-auto" id="status-agents">0 agents</span>
-            </div>
         </div>
 
-        <!-- Panel B · 3D Density Surface (Plotly) -->
-        <div class="panel-b rounded-xl bg-[#0b0f1a] border border-slate-800 overflow-hidden relative flex flex-col">
-            <div class="flex items-center px-3 py-2 shrink-0 border-b border-slate-800">
-                <span class="panel-title">3D Density Surface</span>
-                <span class="ml-auto text-xs text-slate-600 font-mono">plasma</span>
+        <!-- ── Panel: 3D Density Surface ───────────────────────────────── -->
+        <div id="panel-surface" class="tab-panel h-full hidden flex flex-col">
+            <!-- Labels row above the plots -->
+            <div class="shrink-0 px-5 py-2 border-b border-gray-100 flex items-center">
+                <span class="text-xs text-gray-400">
+                    Left — real-time density (plasma) · Right — time-averaged density (viridis) · Drag to rotate
+                </span>
             </div>
             <div id="surface-div" class="flex-1 w-full"></div>
         </div>
 
-        <!-- Panel C · Trajectory / Path Heatmap (Canvas accumulation) -->
-        <div class="panel-c rounded-xl bg-[#080814] border border-slate-800 overflow-hidden relative flex flex-col">
-            <div class="flex items-center px-3 py-2 shrink-0 border-b border-slate-800">
-                <span class="panel-title">Cumulative Path Heatmap</span>
-                <span class="ml-auto text-xs text-slate-600 font-mono">plasma · accumulating</span>
+        <!-- ── Panel: Path Heatmap ─────────────────────────────────────── -->
+        <div id="panel-path" class="tab-panel h-full hidden flex flex-col">
+            <div class="shrink-0 px-5 py-2 border-b border-gray-100 flex items-center gap-3">
+                <span class="text-xs text-gray-400">
+                    Cumulative path density — plasma colormap · paths accumulate over time, hot spots glow bright
+                </span>
+                <button id="btn-clear-path"
+                        class="ml-auto text-xs px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-200 transition-colors">
+                    Clear
+                </button>
             </div>
-            <div class="flex-1 relative overflow-hidden">
-                <!-- Canvas fills its container via CSS -->
-                <canvas id="trajectory-canvas" width="600" height="420"
+            <div class="flex-1 relative overflow-hidden bg-white">
+                <canvas id="trajectory-canvas" width="800" height="560"
                         class="trajectory-canvas"></canvas>
             </div>
         </div>
@@ -122,12 +143,11 @@
     </div>
 
     <!-- ── Status bar ────────────────────────────────────────────────────── -->
-    <div class="h-5 bg-slate-900 border-t border-slate-800 flex items-center px-4 gap-6 shrink-0">
-        <span id="status-conn" class="text-slate-500 text-xs">○ Connecting…</span>
-        <span class="text-slate-700 text-xs ml-auto">HumanCymatics · Crowd Intelligence Demo</span>
+    <div class="h-5 bg-gray-50 border-t border-gray-200 flex items-center px-5 gap-4 shrink-0">
+        <span id="status-conn" class="text-gray-400 text-xs">○ Connecting…</span>
+        <span class="text-gray-300 text-xs ml-auto">HumanCymatics · Crowd Intelligence Demo</span>
     </div>
 
-    <!-- Scripts — order matters: colormaps before trajectory, Plotly already loaded above -->
     <script src="/static/js/maps.js"></script>
     <script src="/static/js/alerts.js"></script>
     <script src="/static/js/colormaps.js"></script>
