@@ -65,13 +65,12 @@
     pointer-events: none;
 }
 
-/* ── Trajectory canvas — fills its container ─────────────────────────── */
+/* ── Trajectory canvas — stretches to fill dark container ────────────── */
 .trajectory-canvas {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain;
 }
 
 /* ── Viridis legend gradient ─────────────────────────────────────────── */

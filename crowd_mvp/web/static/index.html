@@ -125,7 +125,7 @@
 
         <!-- ── Panel: Path Heatmap ─────────────────────────────────────── -->
         <div id="panel-path" class="tab-panel h-full hidden flex flex-col">
-            <div class="shrink-0 px-5 py-2 border-b border-gray-100 flex items-center gap-3">
+            <div class="shrink-0 px-5 py-2 border-b border-gray-100 flex items-center gap-3 bg-white">
                 <span class="text-xs text-gray-400">
                     Cumulative path density — plasma colormap · paths accumulate over time, hot spots glow bright
                 </span>
@@ -134,8 +134,9 @@
                     Clear
                 </button>
             </div>
-            <div class="flex-1 relative overflow-hidden bg-white">
-                <canvas id="trajectory-canvas" width="800" height="560"
+            <!-- Dark background so plasma colours (dark purple → bright yellow) pop -->
+            <div class="flex-1 relative overflow-hidden bg-[#0d1424]">
+                <canvas id="trajectory-canvas" width="1000" height="700"
                         class="trajectory-canvas"></canvas>
             </div>
         </div>

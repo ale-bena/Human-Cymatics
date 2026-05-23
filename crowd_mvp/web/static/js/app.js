@@ -83,14 +83,14 @@ function connect() {
             state.geometry = msg;
             renderGeometry(msg);
 
-            // Re-init surface and trajectory on map reset / scenario change
+            // Re-init surface on reset / scenario change
             if (_surfaceInited) {
                 resetSurface('surface-div');
             }
+            // Always (re)init trajectory on geometry — eager so data accumulates immediately
             if (_trajectory) {
                 _trajectory.reset();
-            }
-            if (state.activeTab === 'path' && !_trajectory) {
+            } else {
                 _initTrajectory();
             }
         } else {
@@ -129,12 +129,10 @@ function updateFromSnapshot(snap) {
         updateSurface('surface-div', snap.density_grid);
     }
 
-    // Trajectory — always accumulate if initialised
+    // Trajectory — accumulate every frame; render every frame when tab is active
     if (_trajectory && snap.agents && snap.agents.length) {
         _trajectory.addAgents(snap.agents);
-        if (state.activeTab === 'path') {
-            _trajectory.render();
-        }
+        _trajectory.render();   // render always — cheap on dark bg, no throttle
     }
 
     // Scenario label
