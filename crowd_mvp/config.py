@@ -32,6 +32,7 @@ COLOUR_POI_EXIT = (200, 80, 80)      # red
 COLOUR_POI_BAR = (255, 180, 0)       # amber
 COLOUR_POI_STAND = (180, 100, 220)   # purple
 COLOUR_POI_BATHROOM = (80, 180, 200) # teal
+COLOUR_POI_TABLE = (160, 130, 95)    # warm wood — sit-down tables
 COLOUR_OVERLAY_BG = (20, 20, 20, 180) # semi-transparent end overlay (D-11)
 COLOUR_TEXT = (255, 255, 255)
 COLOUR_LABEL = (40, 40, 40)

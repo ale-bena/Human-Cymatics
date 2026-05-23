@@ -11,7 +11,7 @@ from crowd_mvp.config import (
 from crowd_mvp.maps import (
     get_sniffer_positions, find_zone_for_point,
     find_room_for_point, build_room_graph, get_room_center,
-    obstacles_to_walls,
+    obstacles_to_walls, compute_room_capacities,
 )
 from crowd_mvp.people import WandererAgent, GoalAgent, SocialAgent
 from crowd_mvp.sniffers import Sniffer
@@ -46,6 +46,10 @@ class Simulation:
         self.behavior = behavior
         self.frame_count = 0
         self._complete = False
+
+        # Rescale room capacities from weights given current crowd size, so
+        # the 80% / 100% capacity alerts stay meaningful across scenarios.
+        compute_room_capacities(map_def, n_people)
 
         map_size = map_def['size']
         poi_list = map_def['poi']

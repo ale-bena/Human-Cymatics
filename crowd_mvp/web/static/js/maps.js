@@ -16,6 +16,7 @@ const POI_FILL = {
     bar:           '#f59e0b',
     sponsor_stand: '#a855f7',
     bathroom:      '#06b6d4',
+    table:         '#b58a5a',
 };
 
 const POI_SHORT = {
@@ -24,6 +25,7 @@ const POI_SHORT = {
     bar:           'BAR',
     sponsor_stand: 'S',
     bathroom:      'WC',
+    table:         'T',
 };
 
 function svgEl(tag, attrs) {
@@ -117,19 +119,86 @@ function renderGeometry(data) {
         }));
     });
 
-    // POIs
+    // POIs — entrance/exit render as door frames, tables as small circles,
+    // everything else as a labelled chip.
+    const [mapW, mapH] = data.map_size || [1000, 700];
     (data.pois || []).forEach(p => {
         const [px, py] = p.pos;
         const fill = POI_FILL[p.category] || '#888';
         const short = POI_SHORT[p.category] || p.category.substring(0, 3).toUpperCase();
-        const g = svgEl('g', {});
-        g.appendChild(svgEl('rect', {
-            x: px - 12, y: py - 9, width: 24, height: 18,
-            fill, rx: 3, opacity: 0.9,
-        }));
-        g.appendChild(svgText(short, px, py, '#fff', 8, '600'));
-        layerPois.appendChild(g);
+
+        if (p.category === 'entrance' || p.category === 'exit') {
+            layerPois.appendChild(renderDoorPoi(px, py, mapW, mapH, fill, short));
+        } else if (p.category === 'table') {
+            layerPois.appendChild(renderTablePoi(px, py, fill, short));
+        } else {
+            const g = svgEl('g', {});
+            g.appendChild(svgEl('rect', {
+                x: px - 12, y: py - 9, width: 24, height: 18,
+                fill, rx: 3, opacity: 0.9,
+            }));
+            g.appendChild(svgText(short, px, py, '#fff', 8, '600'));
+            layerPois.appendChild(g);
+        }
     });
+}
+
+// Door POI: an oriented door frame placed on the nearest map perimeter,
+// with a 90° swing arc and a bold IN/OUT label.
+function renderDoorPoi(px, py, mapW, mapH, fill, label) {
+    // Pick the closest perimeter edge so the door sits naturally on the wall.
+    const dN = py, dS = mapH - py, dW = px, dE = mapW - px;
+    const minD = Math.min(dN, dS, dW, dE);
+    let orient;
+    if (minD === dS) orient = 'south';
+    else if (minD === dN) orient = 'north';
+    else if (minD === dW) orient = 'west';
+    else orient = 'east';
+
+    const g = svgEl('g', {});
+    const W = 48, T = 10;   // frame width along the wall, thickness across it
+    let frameRect, arc;
+
+    if (orient === 'south' || orient === 'north') {
+        frameRect = { x: px - W / 2, y: py - T / 2, width: W, height: T };
+        const dy = orient === 'south' ? -W / 2 : W / 2;
+        arc = `M ${px - W / 2} ${py} A ${W / 2} ${W / 2} 0 0 1 ${px} ${py + dy}`;
+    } else {
+        frameRect = { x: px - T / 2, y: py - W / 2, width: T, height: W };
+        const dx = orient === 'east' ? -W / 2 : W / 2;
+        arc = `M ${px} ${py - W / 2} A ${W / 2} ${W / 2} 0 0 1 ${px + dx} ${py}`;
+    }
+
+    g.appendChild(svgEl('rect', {
+        ...frameRect, fill, rx: 2,
+        stroke: '#0f172a', 'stroke-width': 1.5, opacity: 0.95,
+    }));
+    g.appendChild(svgEl('path', {
+        d: arc, fill: 'none', stroke: fill, 'stroke-width': 1.3,
+        'stroke-dasharray': '3,3', opacity: 0.75,
+    }));
+
+    // Label is offset away from the wall so it doesn't overlap the frame.
+    const off = 14;
+    let lx = px, ly = py;
+    if (orient === 'south') ly = py - off;
+    else if (orient === 'north') ly = py + off;
+    else if (orient === 'east') lx = px - off;
+    else lx = px + off;
+    g.appendChild(svgText(label, lx, ly, fill, 10, '700'));
+    return g;
+}
+
+// Table POI: small filled circle with a "T" — sits naturally on top of the
+// table decor rectangle without dominating the room.
+function renderTablePoi(px, py, fill, label) {
+    const g = svgEl('g', {});
+    g.appendChild(svgEl('circle', {
+        cx: px, cy: py, r: 8, fill,
+        stroke: '#1a1a2a', 'stroke-width': 0.8, opacity: 0.9,
+    }));
+    g.appendChild(svgText(label, px, py, '#fff', 9, '700'));
+    return g;
 }
 
 function updateAgents(agents) {

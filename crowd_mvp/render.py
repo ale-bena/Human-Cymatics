@@ -10,7 +10,7 @@ from crowd_mvp.config import (
     COLOUR_BG, COLOUR_ZONE_FILL, COLOUR_ZONE_BORDER,
     COLOUR_AGENT, COLOUR_SNIFFER,
     COLOUR_POI_ENTRANCE, COLOUR_POI_EXIT, COLOUR_POI_BAR,
-    COLOUR_POI_STAND, COLOUR_POI_BATHROOM,
+    COLOUR_POI_STAND, COLOUR_POI_BATHROOM, COLOUR_POI_TABLE,
     COLOUR_LABEL,
     FONT_SIZE_LABEL,
     WALL_THICKNESS, WALL_COLOR,
@@ -27,14 +27,16 @@ _POI_COLOURS = {
     'bar':           COLOUR_POI_BAR,
     'sponsor_stand': COLOUR_POI_STAND,
     'bathroom':      COLOUR_POI_BATHROOM,
+    'table':         COLOUR_POI_TABLE,
 }
 
 _POI_LABELS = {
-    'entrance':      'EN',
-    'exit':          'EX',
+    'entrance':      'IN',
+    'exit':          'OUT',
     'bar':           'BAR',
     'sponsor_stand': 'STD',
     'bathroom':      'WC',
+    'table':         'T',
 }
 
 
