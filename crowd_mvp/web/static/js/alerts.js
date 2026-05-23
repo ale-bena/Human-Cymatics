@@ -6,20 +6,20 @@ const SEVERITY = {
     ok:       { border: 'border-green-500',  bg: 'bg-green-950',  icon: '🟢', badge: 'text-green-400'  },
 };
 
+const SEV_ORDER = { critical: 0, warning: 1, ok: 2 };
+
 let _lastAlerts = [];
 
 function renderAlerts(alerts, filter) {
     _lastAlerts = alerts;
     const list = document.getElementById('alerts-list');
 
-    const filtered = filter === 'all'
-        ? alerts
-        : alerts.filter(a => a.severity === filter);
-
-    const sorted = [...filtered].sort((a, b) =>
-        a.severity === 'critical' && b.severity !== 'critical' ? -1 :
-        b.severity === 'critical' && a.severity !== 'critical' ? 1 : 0
-    );
+    const filtered = filter === 'all' ? alerts : alerts.filter(a => a.severity === filter);
+    // Sort: critical first, then newest (smallest since) first within same severity
+    const sorted = [...filtered].sort((a, b) => {
+        const sd = (SEV_ORDER[a.severity] ?? 1) - (SEV_ORDER[b.severity] ?? 1);
+        return sd !== 0 ? sd : (a.since ?? 0) - (b.since ?? 0);
+    });
 
     // Update count badges
     const crit = alerts.filter(a => a.severity === 'critical').length;
@@ -34,41 +34,61 @@ function renderAlerts(alerts, filter) {
         return;
     }
 
-    // Preserve existing cards to avoid removing/re-adding unnecessarily
-    const existingIds = new Set([...list.querySelectorAll('[data-alert-id]')].map(el => el.dataset.alertId));
+    // Clear the "no alerts" placeholder if it's there
+    if (!list.querySelector('[data-alert-id]')) list.innerHTML = '';
+
+    // Build a map of currently rendered cards
+    const existingMap = new Map(
+        [...list.querySelectorAll('[data-alert-id]')].map(el => [el.dataset.alertId, el])
+    );
     const incomingIds = new Set(sorted.map(a => a.id));
 
-    // Remove stale cards
-    for (const id of existingIds) {
-        if (!incomingIds.has(id)) {
-            const el = list.querySelector(`[data-alert-id="${id}"]`);
-            if (el) el.remove();
-        }
+    // Remove cards that are no longer active
+    for (const [id, el] of existingMap) {
+        if (!incomingIds.has(id)) el.remove();
     }
 
-    // Rebuild cards in sorted order
-    list.innerHTML = '';
-    for (const alert of sorted) {
+    // Insert or update cards and enforce sorted DOM order
+    for (let i = 0; i < sorted.length; i++) {
+        const alert = sorted[i];
         const cfg = SEVERITY[alert.severity] || SEVERITY.warning;
         const sinceText = alert.since != null ? `${Math.round(alert.since)}s` : '';
 
-        const card = document.createElement('div');
-        card.className = `alert-card rounded-lg p-3 border-l-4 ${cfg.border} ${cfg.bg}`;
-        card.dataset.alertId = alert.id;
-        card.innerHTML = `
-            <div class="flex items-start gap-2">
-                <span class="text-sm mt-0.5 shrink-0">${cfg.icon}</span>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-baseline justify-between gap-2">
-                        <span class="font-semibold text-sm text-slate-100 truncate">${escHtml(alert.title)}</span>
-                        <span class="text-xs text-slate-500 shrink-0">${sinceText}</span>
-                    </div>
-                    <div class="text-xs text-slate-300 mt-0.5">${escHtml(alert.description)}</div>
-                    <div class="text-xs text-slate-500 mt-1 italic">${escHtml(alert.suggestion)}</div>
-                </div>
-            </div>`;
-        list.appendChild(card);
+        let card = existingMap.get(alert.id);
+
+        if (!card) {
+            // New alert — create with fade-in animation
+            card = document.createElement('div');
+            card.dataset.alertId = alert.id;
+            card.className = `alert-card rounded-lg p-3 border-l-4 ${cfg.border} ${cfg.bg}`;
+            card.innerHTML = _cardHTML(alert, cfg, sinceText);
+        } else {
+            // Existing alert — update the since timer only, no re-animation
+            const sinceEl = card.querySelector('[data-since]');
+            if (sinceEl) sinceEl.textContent = sinceText;
+            // Ensure class stays stable (no alert-card = no animation replay)
+            card.className = `rounded-lg p-3 border-l-4 ${cfg.border} ${cfg.bg}`;
+        }
+
+        // Move card to the correct position if needed
+        const nodeAtIndex = list.children[i];
+        if (nodeAtIndex !== card) list.insertBefore(card, nodeAtIndex || null);
     }
+}
+
+function _cardHTML(alert, cfg, sinceText) {
+    return `
+        <div class="flex items-start gap-2">
+            <span class="text-sm mt-0.5 shrink-0">${cfg.icon}</span>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-baseline justify-between gap-2">
+                    <span class="font-semibold text-sm text-slate-100 truncate">${escHtml(alert.title)}</span>
+                    <span class="text-xs text-slate-500 shrink-0" data-since>${sinceText}</span>
+                </div>
+                <div class="text-xs text-slate-300 mt-0.5">${escHtml(alert.description)}</div>
+                <div class="text-xs text-slate-500 mt-1 italic">${escHtml(alert.suggestion)}</div>
+            </div>
+        </div>`;
 }
 
 function escHtml(s) {

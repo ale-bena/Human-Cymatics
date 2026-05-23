@@ -7,6 +7,13 @@ const state = {
     geometry: null,
     lastKde: '',
     lastEst: '',
+    firstSnapshot: true,
+};
+
+const SCENARIO_N_PEOPLE = {
+    baseline: 50,
+    concert_peak: 200,
+    evacuation_drill: 150,
 };
 
 let ws = null;
@@ -20,7 +27,7 @@ function connect() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     ws = new WebSocket(`${proto}//${location.host}/ws`);
 
-    ws.onopen = () => setStatus('connected');
+    ws.onopen = () => { setStatus('connected'); state.firstSnapshot = true; };
 
     ws.onmessage = ({ data }) => {
         let msg;
@@ -69,6 +76,13 @@ function updateFromSnapshot(snap) {
     const sel = document.getElementById('scenario-select');
     if (sel && sel.value !== snap.scenario) sel.value = snap.scenario;
 
+    // Sync n_people input on first snapshot after connect/reset
+    if (state.firstSnapshot && snap.n_people != null) {
+        const inp = document.getElementById('n-people-input');
+        if (inp) inp.value = snap.n_people;
+        state.firstSnapshot = false;
+    }
+
     // Status bar
     document.getElementById('status-agents').textContent = `${snap.agents.length} agents`;
 
@@ -79,7 +93,7 @@ function updateFromSnapshot(snap) {
 function updateHeatmapOverlay() {
     const overlay = document.getElementById('heatmap-overlay');
     if (!overlay) return;
-    overlay.src = state.tab === 'kde' ? state.lastKde : state.lastEst;
+    overlay.setAttribute('href', state.tab === 'kde' ? state.lastKde : state.lastEst);
 }
 
 // ------------------------------------------------------------------
@@ -107,10 +121,18 @@ document.getElementById('btn-pause').addEventListener('click', () =>
     fetch('/sim/pause', { method: 'POST' }));
 document.getElementById('btn-resume').addEventListener('click', () =>
     fetch('/sim/resume', { method: 'POST' }));
-document.getElementById('btn-reset').addEventListener('click', () =>
-    fetch('/sim/reset', { method: 'POST' }));
-document.getElementById('scenario-select').addEventListener('change', e =>
-    fetch(`/sim/scenario/${e.target.value}`, { method: 'POST' }));
+document.getElementById('btn-reset').addEventListener('click', () => {
+    const n = parseInt(document.getElementById('n-people-input')?.value || 50, 10);
+    const clamped = Math.max(10, Math.min(700, n));
+    state.firstSnapshot = true;
+    fetch(`/sim/reset?n_people=${clamped}`, { method: 'POST' });
+});
+document.getElementById('scenario-select').addEventListener('change', e => {
+    const scenario = e.target.value;
+    const inp = document.getElementById('n-people-input');
+    if (inp && SCENARIO_N_PEOPLE[scenario] != null) inp.value = SCENARIO_N_PEOPLE[scenario];
+    fetch(`/sim/scenario/${scenario}`, { method: 'POST' });
+});
 
 // ------------------------------------------------------------------
 // Hamburger

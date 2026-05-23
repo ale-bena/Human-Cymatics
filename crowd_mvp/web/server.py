@@ -52,8 +52,8 @@ async def sim_resume():
 
 
 @app.post('/sim/reset')
-async def sim_reset():
-    await manager.reset()
+async def sim_reset(n_people: int = None):
+    await manager.reset(n_people=n_people)
     return {'status': 'reset'}
 
 

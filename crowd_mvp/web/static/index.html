@@ -28,10 +28,16 @@
         <div class="flex items-center gap-2">
             <select id="scenario-select"
                     class="bg-slate-800 text-slate-200 text-sm border border-slate-700 rounded-md px-3 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer">
-                <option value="baseline">Baseline (50 ppl)</option>
-                <option value="concert_peak">Concert Peak (200 ppl)</option>
-                <option value="evacuation_drill">Evacuation Drill (150 ppl)</option>
+                <option value="baseline">Baseline</option>
+                <option value="concert_peak">Concert Peak</option>
+                <option value="evacuation_drill">Evacuation Drill</option>
             </select>
+            <div class="flex items-center gap-1" title="Agent count — applies on Reset">
+                <input type="number" id="n-people-input"
+                       min="10" max="700" value="50"
+                       class="bg-slate-800 text-slate-200 text-sm border border-slate-700 rounded-md px-2 py-1.5 w-20 text-center focus:outline-none focus:border-blue-500">
+                <span class="text-slate-500 text-xs">ppl</span>
+            </div>
             <button id="btn-pause"
                     class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md text-sm transition-colors">
                 <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><rect x="5" y="4" width="3" height="12" rx="1"/><rect x="12" y="4" width="3" height="12" rx="1"/></svg>
@@ -92,10 +98,12 @@
             <!-- Map container -->
             <div class="flex-1 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 relative">
                 <div id="map-viewport">
-                    <!-- SVG geometry layers -->
                     <svg id="map-svg" viewBox="0 0 1000 700"
                          xmlns="http://www.w3.org/2000/svg">
                         <g id="layer-rooms"></g>
+                        <!-- Heatmap sits above room backgrounds, below all structural elements -->
+                        <image id="heatmap-overlay" x="0" y="0" width="1000" height="700"
+                               href="" opacity="0.82" preserveAspectRatio="none"/>
                         <g id="layer-obstacles"></g>
                         <g id="layer-decor"></g>
                         <g id="layer-walls"></g>
@@ -103,9 +111,6 @@
                         <g id="layer-pois"></g>
                         <g id="layer-agents"></g>
                     </svg>
-                    <!-- Heatmap PNG overlay -->
-                    <img id="heatmap-overlay" src="" alt=""
-                         style="opacity: 0.72;" />
                 </div>
             </div>
 

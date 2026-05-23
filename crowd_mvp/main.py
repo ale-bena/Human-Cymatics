@@ -24,9 +24,10 @@ from crowd_mvp.config import (
 from crowd_mvp.maps import SMALL_MAP, MEDIUM_MAP, LARGE_MAP, ROOMED_MAP, ALL_MAPS
 from crowd_mvp.simulation import Simulation
 from crowd_mvp import render
-from crowd_mvp.viz.heatmap import build_heatmap_surface
+from crowd_mvp.viz.heatmap import build_heatmap_surface, compute_density_grid
 from crowd_mvp.viz.compare import build_compare_panels
 from crowd_mvp.viz.traffic import build_traffic_panels
+from crowd_mvp.viz.surface3d import build_3d_surface_pygame
 
 
 # ---------------------------------------------------------------------------
@@ -158,7 +159,7 @@ async def main():
     live_sigma_error  = SIGMA_ERROR
     live_sigma_kernel = SIGMA_KERNEL_DEFAULT
 
-    active_tab = 1  # 1, 2, or 3 (D-04)
+    active_tab = 1  # 1, 2, 3, or 4
 
     # --- Build initial simulation ---
     def build_sim():
@@ -181,6 +182,13 @@ async def main():
     # Tab 2 compare state — updated every sniffer tick (D-04)
     compare_real_counts = {}
     compare_est_counts  = {}
+
+    # Tab 4 — 3D surface density accumulator
+    density_acc    = None   # np.ndarray (GRID_H, GRID_W) running sum
+    density_ticks  = 0
+    tab4_live_surf = None   # pygame.Surface — current-tick 3D surface
+    tab4_avg_surf  = None   # pygame.Surface — session average 3D surface
+    _sim_was_complete = False
 
     # Playback state (D-09: auto-starts running)
     paused = False
@@ -237,15 +245,17 @@ async def main():
                     active_tab = 2
                 elif event.key == pygame.K_3:
                     active_tab = 3
+                elif event.key == pygame.K_4:
+                    active_tab = 4
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
 
                 # Tab buttons
-                tab_w = WINDOW_W // 3
+                tab_w = WINDOW_W // 4
                 if TAB_BAR_RECT.collidepoint(mx, my):
                     col = mx // tab_w
-                    active_tab = col + 1
+                    active_tab = min(col + 1, 4)
 
                 # Map selector (D-10: staged)
                 for key, rect in map_btn_rects.items():
@@ -264,6 +274,11 @@ async def main():
                     traffic_panels_cache = None
                     compare_real_counts = {}
                     compare_est_counts  = {}
+                    density_acc    = None
+                    density_ticks  = 0
+                    tab4_live_surf = None
+                    tab4_avg_surf  = None
+                    _sim_was_complete = False
                     paused = False
 
                 # Pause / Resume button (D-09, D-10, D-11)
@@ -344,6 +359,31 @@ async def main():
             )
             traffic_panels_cache = (traffic_left, traffic_right)
 
+            # Tab 4 — accumulate density grid; rebuild 3D surfaces only when visible
+            grid = compute_density_grid(agent_positions, agent_weights, sim.map_size, live_sigma_kernel)
+            if density_acc is None:
+                density_acc = grid.copy()
+            else:
+                density_acc += grid
+            density_ticks += 1
+            if active_tab == 4:
+                tab4_live_surf = build_3d_surface_pygame(grid, CANVAS_W, CANVAS_H, title="Live Density")
+                avg_grid = density_acc / density_ticks
+                tab4_avg_surf  = build_3d_surface_pygame(avg_grid, CANVAS_W, CANVAS_H, title="Session Average")
+
+        # Auto-switch to Tab 4 when simulation completes (final summary view)
+        if sim.is_complete and not _sim_was_complete:
+            _sim_was_complete = True
+            active_tab = 4
+            if density_acc is not None and density_ticks > 0:
+                agent_positions_final = [(a.x, a.y) for a in sim.agents]
+                agent_weights_final   = [1.0] * len(agent_positions_final)
+                grid = compute_density_grid(agent_positions_final, agent_weights_final,
+                                            sim.map_size, live_sigma_kernel)
+                tab4_live_surf = build_3d_surface_pygame(grid, CANVAS_W, CANVAS_H, title="Final Snapshot")
+                avg_grid = density_acc / density_ticks
+                tab4_avg_surf  = build_3d_surface_pygame(avg_grid, CANVAS_W, CANVAS_H, title="Session Average")
+
         # ----------------------------------------------------------------
         # Draw
         # ----------------------------------------------------------------
@@ -400,15 +440,29 @@ async def main():
             else:
                 left_surf.fill((20, 20, 30))
                 right_surf.fill((20, 20, 30))
+        elif active_tab == 4:
+            left_surf.fill((18, 18, 42))
+            right_surf.fill((18, 18, 42))
+            waiting_msg = font_tab.render("Waiting for data…", True, (120, 120, 180))
+            if tab4_live_surf is not None:
+                left_surf.blit(tab4_live_surf, (0, 0))
+            else:
+                left_surf.blit(waiting_msg, (CANVAS_W // 2 - waiting_msg.get_width() // 2,
+                                             CANVAS_H // 2 - waiting_msg.get_height() // 2))
+            if tab4_avg_surf is not None:
+                right_surf.blit(tab4_avg_surf, (0, 0))
+            else:
+                right_surf.blit(waiting_msg, (CANVAS_W // 2 - waiting_msg.get_width() // 2,
+                                              CANVAS_H // 2 - waiting_msg.get_height() // 2))
 
-        # End-of-simulation overlay over both panels (D-13)
-        if sim.is_complete:
+        # End-of-simulation overlay — suppressed on Tab 4 (the 3D summary is the overlay)
+        if sim.is_complete and active_tab != 4:
             _draw_end_overlay(screen, font_tab, CANVAS_W, CANVAS_H)
 
         # --- Tab bar (D-04) ---
         pygame.draw.rect(screen, (200, 200, 200), TAB_BAR_RECT)
-        tab_labels = ['Tab 1', 'Tab 2', 'Tab 3']
-        tab_w = WINDOW_W // 3
+        tab_labels = ['Heatmap', 'Compare', 'Traffic', '3D Surface']
+        tab_w = WINDOW_W // 4
         for i, label in enumerate(tab_labels):
             is_active = (active_tab == i + 1)
             tab_rect = pygame.Rect(i * tab_w, CANVAS_H, tab_w, TAB_BAR_H)

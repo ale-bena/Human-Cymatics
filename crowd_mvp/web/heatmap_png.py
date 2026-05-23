@@ -7,10 +7,16 @@ from crowd_mvp.viz.colormaps import VIRIDIS as _VIRIDIS
 from crowd_mvp.viz.heatmap import _compute_density, _GRID_W, _GRID_H
 
 
-def kde_to_b64(sniffer_positions, sniffer_counts, map_size, sigma_kernel=20.0):
-    """Return 'data:image/png;base64,...' KDE heatmap PNG for the given map_size."""
+def kde_to_b64(agent_positions, map_size, sigma_kernel=60.0):
+    """Return 'data:image/png;base64,...' KDE heatmap PNG based on actual agent positions.
+
+    Uses agent positions (not sniffer nodes) so the heatmap follows crowd movement.
+    Alpha is proportional to density — transparent where empty so map geometry shows through.
+    """
     map_w, map_h = map_size
-    density = _compute_density(sniffer_positions, sniffer_counts, map_w, map_h, sigma_kernel)
+    n = len(agent_positions)
+    weights = [1.0] * n  # uniform weight per agent
+    density = _compute_density(agent_positions, weights, map_w, map_h, sigma_kernel)
 
     d_min, d_max = density.min(), density.max()
     normed = (density - d_min) / (d_max - d_min) if d_max > d_min else np.zeros_like(density)
@@ -22,12 +28,15 @@ def kde_to_b64(sniffer_positions, sniffer_counts, map_size, sigma_kernel=20.0):
     scale_y = max(1, map_h // _GRID_H)
     rgb_up = np.repeat(np.repeat(rgb_small, scale_y, axis=0), scale_x, axis=1)
 
-    # Crop to map_size; pad with border color if upscale falls short
+    # Alpha proportional to local density: 0 where empty, up to 210 at peak
+    alpha_small = (np.clip(normed, 0.0, 1.0) * 210).astype(np.uint8)
+    alpha_up = np.repeat(np.repeat(alpha_small, scale_y, axis=0), scale_x, axis=1)
+
     rgba = np.zeros((map_h, map_w, 4), dtype=np.uint8)
     h_up = min(rgb_up.shape[0], map_h)
     w_up = min(rgb_up.shape[1], map_w)
     rgba[:h_up, :w_up, :3] = rgb_up[:h_up, :w_up].astype(np.uint8)
-    rgba[:h_up, :w_up, 3] = 179
+    rgba[:h_up, :w_up, 3] = alpha_up[:h_up, :w_up]
 
     return 'data:image/png;base64,' + base64.b64encode(_png_rgba(rgba)).decode()
 

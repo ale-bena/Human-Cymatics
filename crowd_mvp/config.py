@@ -51,7 +51,7 @@ STATUS_BAR_H = 20        # bottom status bar (existing, now named)
 
 # Phase 2 — Slider ranges (CTR-01)
 N_PEOPLE_MIN = 10
-N_PEOPLE_MAX = 300
+N_PEOPLE_MAX = 700
 N_PEOPLE_DEFAULT = 50       # small map default
 N_PEOPLE_DEFAULT_M = 150    # medium map default
 N_PEOPLE_DEFAULT_L = 300    # large map default

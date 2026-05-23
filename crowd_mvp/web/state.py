@@ -28,11 +28,13 @@ class SimulationManager:
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
-    def _reset_sim(self, scenario_name: str):
+    def _reset_sim(self, scenario_name: str, n_people_override: int = None):
         cfg = SCENARIOS[scenario_name]
+        n = n_people_override if n_people_override is not None else cfg['n_people']
+        n = max(10, min(700, n))
         self._sim = Simulation(
             map_def=ROOMED_MAP,
-            n_people=cfg['n_people'],
+            n_people=n,
             sigma=cfg['sigma'],
             duration=86400,   # effectively infinite
             behavior=cfg['behavior'],
@@ -85,14 +87,15 @@ class SimulationManager:
 
         alerts = self._alert_engine.evaluate(ext_snap)
 
-        sniffer_pos, sniffer_cnt = sim.get_heatmap_data()
-        kde_b64 = kde_to_b64(sniffer_pos, sniffer_cnt, sim.map_size)
+        agents_xy = [(x, y) for x, y, _ in snap['agents']]
+        kde_b64 = kde_to_b64(agents_xy, sim.map_size)
         est_b64 = estimate_to_b64(sim.map_def, est)
 
         payload = {
             't': snap['elapsed_s'],
             'running': not self._paused,
             'scenario': self._scenario,
+            'n_people': self._sim.n_people,
             'rooms': _rooms_payload(sim.map_def, room_density),
             'doors': _doors_payload(sim.map_def, door_flow),
             'agents': [[round(x, 1), round(y, 1), r] for x, y, r in snap['agents']],
@@ -137,8 +140,8 @@ class SimulationManager:
     async def resume(self):
         self._paused = False
 
-    async def reset(self):
-        self._reset_sim(self._scenario)
+    async def reset(self, n_people: int = None):
+        self._reset_sim(self._scenario, n_people_override=n_people)
         geom_msg = json.dumps({'type': 'geometry', **self._static_geometry})
         for ws in list(self._connections):
             try:
