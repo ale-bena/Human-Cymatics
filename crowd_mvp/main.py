@@ -2,10 +2,13 @@
 # Phase 2: Full interactive interface.
 # Window: 1200x520 — dual panels + tab bar + control panel + status bar.
 # Usage: python crowd_mvp/main.py
+# Usage with web UI: python crowd_mvp/main.py --web [--port 8000]
 
 import sys
 import os
 import asyncio
+import argparse
+import threading
 
 import pygame
 
@@ -137,10 +140,60 @@ def scale_factor(map_size):
 
 
 # ---------------------------------------------------------------------------
+# Web bridge helpers
+# ---------------------------------------------------------------------------
+
+def _build_web_payload(sim, paused: bool, alert_engine) -> dict:
+    """Build the WebSocket payload the browser frontend expects."""
+    from crowd_mvp.web.heatmap_png import kde_to_b64, estimate_to_b64
+    from crowd_mvp.web.state import _rooms_payload, _doors_payload
+
+    snap = sim.get_snapshot()
+    real, est = sim.get_zone_counts()
+    room_density = sim.get_room_density()
+    door_flow = sim.get_door_flow()
+
+    ext_snap = {
+        **snap,
+        'zone_counts_real': real,
+        'zone_counts_estimated': est,
+        'room_density': room_density,
+        'door_flow': door_flow,
+        'map_def': sim.map_def,
+    }
+    alerts = alert_engine.evaluate(ext_snap)
+
+    agents_xy = [(x, y) for x, y, _ in snap['agents']]
+    kde_b64 = kde_to_b64(agents_xy, sim.map_size)
+    est_b64 = estimate_to_b64(sim.map_def, est)
+
+    return {
+        't': snap['elapsed_s'],
+        'running': not paused,
+        'scenario': 'pygame',
+        'n_people': sim.n_people,
+        'rooms': _rooms_payload(sim.map_def, room_density),
+        'doors': _doors_payload(sim.map_def, door_flow),
+        'agents': [[round(x, 1), round(y, 1), r] for x, y, r in snap['agents']],
+        'kde_png_b64': kde_b64,
+        'estimate_png_b64': est_b64,
+        'alerts': [a.to_dict() for a in alerts],
+    }
+
+
+def _start_web_server(bridge, host: str, port: int) -> None:
+    """Run uvicorn in a background daemon thread (its own event loop)."""
+    import uvicorn
+    from crowd_mvp.web import server as _srv
+    _srv.init_bridge(bridge)
+    uvicorn.run(_srv.app, host=host, port=port, log_level='warning')
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-async def main():
+async def main(web_bridge=None):
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_W, WINDOW_H))
     pygame.display.set_caption(WINDOW_TITLE)
@@ -172,6 +225,17 @@ async def main():
         )
 
     sim = build_sim()
+
+    # Web bridge — push initial geometry then snapshots each sniffer tick
+    if web_bridge is not None:
+        from crowd_mvp.web.alerts import AlertEngine as _AlertEngine
+        from crowd_mvp.web.state import _extract_geometry
+        web_alert_engine = _AlertEngine()
+        web_bridge.push_geometry(_extract_geometry(sim.map_def))
+    else:
+        _AlertEngine = None
+        _extract_geometry = None
+        web_alert_engine = None
 
     # Heatmap surface — updated every sniffer tick (D-15)
     heatmap_surface = None
@@ -230,6 +294,39 @@ async def main():
 
     running = True
     while running:
+        # ----------------------------------------------------------------
+        # Bridge: drain commands from web UI → apply to Pygame state
+        # ----------------------------------------------------------------
+        if web_bridge is not None:
+            for cmd in web_bridge.drain_commands():
+                c = cmd.get('cmd')
+                if c == 'pause':
+                    paused = True
+                elif c == 'resume':
+                    if not sim.is_complete:
+                        paused = False
+                elif c == 'spawn_entrance':
+                    sim.respawn_from_entrance()
+                elif c == 'evacuate':
+                    sim.evacuate()
+                elif c == 'reset':
+                    n_override = cmd.get('n_people')
+                    if n_override is not None:
+                        staged_n_people = int(n_override)
+                    sim = build_sim()
+                    heatmap_surface = None
+                    traffic_panels_cache = None
+                    compare_real_counts = {}
+                    compare_est_counts = {}
+                    density_acc = None
+                    density_ticks = 0
+                    tab4_live_surf = None
+                    tab4_avg_surf = None
+                    _sim_was_complete = False
+                    paused = False
+                    web_alert_engine = _AlertEngine()
+                    web_bridge.push_geometry(_extract_geometry(sim.map_def))
+
         # ----------------------------------------------------------------
         # Event handling
         # ----------------------------------------------------------------
@@ -370,6 +467,12 @@ async def main():
                 tab4_live_surf = build_3d_surface_pygame(grid, CANVAS_W, CANVAS_H, title="Live Density")
                 avg_grid = density_acc / density_ticks
                 tab4_avg_surf  = build_3d_surface_pygame(avg_grid, CANVAS_W, CANVAS_H, title="Session Average")
+
+            # Push snapshot to web bridge (runs in its own thread at 2 Hz)
+            if web_bridge is not None:
+                web_bridge.push_snapshot(
+                    _build_web_payload(sim, paused, web_alert_engine)
+                )
 
         # Auto-switch to Tab 4 when simulation completes (final summary view)
         if sim.is_complete and not _sim_was_complete:
@@ -538,4 +641,25 @@ async def main():
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description='Crowd Monitoring MVP')
+    parser.add_argument('--web', action='store_true',
+                        help='Also start the web UI server (http://localhost:PORT)')
+    parser.add_argument('--port', type=int, default=8000,
+                        help='Web server port (default 8000)')
+    parser.add_argument('--host', default='127.0.0.1',
+                        help='Web server host (default 127.0.0.1)')
+    args = parser.parse_args()
+
+    web_bridge = None
+    if args.web:
+        from crowd_mvp.web.bridge import SimBridge
+        web_bridge = SimBridge()
+        t = threading.Thread(
+            target=_start_web_server,
+            args=(web_bridge, args.host, args.port),
+            daemon=True,
+        )
+        t.start()
+        print(f'Web UI → http://{args.host}:{args.port}')
+
+    asyncio.run(main(web_bridge=web_bridge))

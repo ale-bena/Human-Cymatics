@@ -3,6 +3,7 @@
 # Headless by design — no pygame import. UI layers read state via get_snapshot()
 # and friends; rendering lives in crowd_mvp/render.py.
 
+import math as _math
 import random as _random
 
 from crowd_mvp.config import (
@@ -239,6 +240,39 @@ class Simulation:
             delta = total - self._door_total_prev_tick.get(door_id, 0)
             self._door_flow[door_id] = delta / seconds
             self._door_total_prev_tick[door_id] = total
+
+    # ------------------------------------------------------------------
+    # Command API (called from web layer or bridge)
+    # ------------------------------------------------------------------
+
+    def respawn_from_entrance(self):
+        """Teleport all agents to a jittered ring around the entrance POI."""
+        entrance = next((p for p in self.map_def['poi'] if p['category'] == 'entrance'), None)
+        if entrance is None:
+            return
+        ex, ey = entrance['pos']
+        for agent in self.agents:
+            angle = _random.uniform(0, 6.2832)
+            r = _random.uniform(10, 40)
+            agent.pos[0] = ex + r * _math.cos(angle)
+            agent.pos[1] = ey + r * _math.sin(angle)
+            agent.dwell_frames = 0
+            agent.waypoints = []
+            agent.waypoint_idx = 0
+            agent._pick_new_target()
+
+    def evacuate(self):
+        """Set every agent's target to the nearest exit POI."""
+        exits = [p for p in self.map_def['poi'] if p['category'] == 'exit']
+        if not exits:
+            return
+        for agent in self.agents:
+            best = min(exits, key=lambda p: _math.hypot(
+                p['pos'][0] - agent.pos[0], p['pos'][1] - agent.pos[1]
+            ))
+            agent.dwell_frames = 0
+            agent.waypoints = agent._plan_path(best['pos'])
+            agent.waypoint_idx = 0
 
     # ------------------------------------------------------------------
     # Read API (any UI consumes these — no pygame dependency)
