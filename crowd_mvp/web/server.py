@@ -9,11 +9,25 @@ from crowd_mvp.web.state import SimulationManager
 
 _STATIC_DIR = Path(__file__).parent / 'static'
 
-manager = SimulationManager()
+# May be replaced by init_bridge() before the app starts.
+_bridge = None
+manager = None
+
+
+def init_bridge(bridge) -> None:
+    """Call before uvicorn.run() to make Pygame the simulation source."""
+    global _bridge
+    _bridge = bridge
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global manager
+    if _bridge is not None:
+        from crowd_mvp.web.state import BridgedSimulationManager
+        manager = BridgedSimulationManager(_bridge)
+    else:
+        manager = SimulationManager()
     await manager.start()
     yield
 
@@ -55,6 +69,18 @@ async def sim_resume():
 async def sim_reset(n_people: int = None):
     await manager.reset(n_people=n_people)
     return {'status': 'reset'}
+
+
+@app.post('/sim/spawn_entrance')
+async def sim_spawn_entrance():
+    await manager.spawn_entrance()
+    return {'status': 'ok'}
+
+
+@app.post('/sim/evacuate')
+async def sim_evacuate():
+    await manager.evacuate()
+    return {'status': 'ok'}
 
 
 @app.post('/sim/scenario/{name}')

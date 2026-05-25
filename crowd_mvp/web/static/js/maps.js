@@ -64,12 +64,12 @@ function renderGeometry(data) {
     // Rooms
     (data.rooms || []).forEach((r, i) => {
         const [rx, ry, rw, rh] = r.rect;
-        const fill = i % 2 === 0 ? '#1e2d45' : '#182338';
+        const fill = i % 2 === 0 ? '#dbeafe' : '#eff6ff';
         layerRooms.appendChild(svgEl('rect', {
             x: rx, y: ry, width: rw, height: rh,
-            fill, stroke: '#3d5a80', 'stroke-width': 1.5,
+            fill, stroke: '#93c5fd', 'stroke-width': 1.5,
         }));
-        layerRooms.appendChild(svgText(r.name, rx + rw / 2, ry + rh / 2, '#64748b', 14, '500'));
+        layerRooms.appendChild(svgText(r.name, rx + rw / 2, ry + rh / 2, '#475569', 14, '500'));
     });
 
     // Obstacles
@@ -107,7 +107,7 @@ function renderGeometry(data) {
     (data.walls || []).forEach(w => {
         layerWalls.appendChild(svgEl('line', {
             x1: w.x0, y1: w.y0, x2: w.x1, y2: w.y1,
-            stroke: '#2d3748', 'stroke-width': 3, 'stroke-linecap': 'round',
+            stroke: '#94a3b8', 'stroke-width': 3, 'stroke-linecap': 'round',
         }));
     });
 
@@ -171,7 +171,7 @@ function renderDoorPoi(px, py, mapW, mapH, fill, label) {
 
     g.appendChild(svgEl('rect', {
         ...frameRect, fill, rx: 2,
-        stroke: '#0f172a', 'stroke-width': 1.5, opacity: 0.95,
+        stroke: '#ffffff', 'stroke-width': 1.5, opacity: 0.95,
     }));
     g.appendChild(svgEl('path', {
         d: arc, fill: 'none', stroke: fill, 'stroke-width': 1.3,
@@ -195,7 +195,7 @@ function renderTablePoi(px, py, fill, label) {
     const g = svgEl('g', {});
     g.appendChild(svgEl('circle', {
         cx: px, cy: py, r: 8, fill,
-        stroke: '#1a1a2a', 'stroke-width': 0.8, opacity: 0.9,
+        stroke: '#ffffff', 'stroke-width': 0.8, opacity: 0.9,
     }));
     g.appendChild(svgText(label, px, py, '#fff', 9, '700'));
     return g;
@@ -210,8 +210,8 @@ function updateAgents(agents) {
         c.setAttribute('cx', x);
         c.setAttribute('cy', y);
         c.setAttribute('r', '3');
-        c.setAttribute('fill', '#93c5fd');
-        c.setAttribute('opacity', '0.75');
+        c.setAttribute('fill', '#2563eb');
+        c.setAttribute('opacity', '0.65');
         frag.appendChild(c);
     }
     layer.innerHTML = '';

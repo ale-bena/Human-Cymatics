@@ -1,6 +1,7 @@
 import asyncio
 import json
 import time
+from pathlib import Path
 from typing import Set
 
 from crowd_mvp.maps import ROOMED_MAP
@@ -8,9 +9,21 @@ from crowd_mvp.simulation import Simulation
 from crowd_mvp.web.alerts import AlertEngine
 from crowd_mvp.web.heatmap_png import kde_to_b64, estimate_to_b64
 from crowd_mvp.web.scenarios import SCENARIOS
+from crowd_mvp.web.bridge import SimBridge
 
 _BROADCAST_INTERVAL = 0.5   # seconds (2 Hz)
 _UPDATE_INTERVAL    = 1.0 / 60  # ~16.7 ms
+
+_PRESET_PATH = Path(__file__).parent.parent / 'preset.json'
+
+
+def _load_preset() -> dict:
+    if _PRESET_PATH.exists():
+        try:
+            return json.loads(_PRESET_PATH.read_text())
+        except Exception:
+            pass
+    return {}
 
 
 class SimulationManager:
@@ -23,7 +36,11 @@ class SimulationManager:
         self._last_snapshot: dict = None
         self._static_geometry: dict = None
         self._task: asyncio.Task = None
-        self._reset_sim('baseline')
+        preset = _load_preset()
+        self._reset_sim(
+            preset.get('scenario', 'baseline'),
+            preset.get('n_people', None),
+        )
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -160,12 +177,19 @@ class SimulationManager:
             except Exception:
                 self._connections.discard(ws)
 
+    async def spawn_entrance(self):
+        self._sim.respawn_from_entrance()
+
+    async def evacuate(self):
+        self._sim.evacuate()
+
     def last_snapshot(self) -> dict:
         return self._last_snapshot
 
     # ------------------------------------------------------------------
     # Testing helper
     # ------------------------------------------------------------------
+
     async def run_for(self, seconds: float):
         """Advance simulation for `seconds` of wall-clock time (for unit tests)."""
         end = time.monotonic() + seconds
@@ -221,3 +245,81 @@ def _doors_payload(map_def: dict, door_flow: dict) -> list:
         }
         for d in map_def.get('doors', [])
     ]
+
+
+# ------------------------------------------------------------------
+# Bridged manager — Pygame is the simulation, we just relay
+# ------------------------------------------------------------------
+
+class BridgedSimulationManager:
+    """Relays snapshots from SimBridge to connected WebSocket clients.
+
+    The Pygame main loop owns the Simulation; it pushes payloads via bridge.push_snapshot().
+    Controls (pause/resume/reset) are forwarded back via bridge.send_command().
+    """
+
+    def __init__(self, bridge: SimBridge):
+        self._bridge = bridge
+        self._connections: Set = set()
+        self._task: asyncio.Task = None
+        self._last_sent: dict | None = None
+
+    async def start(self):
+        self._task = asyncio.create_task(self._run())
+
+    async def _run(self):
+        while True:
+            snap = self._bridge.get_snapshot()
+            if snap is not None and snap is not self._last_sent:
+                await self._broadcast(snap)
+                self._last_sent = snap
+            await asyncio.sleep(_BROADCAST_INTERVAL)
+
+    async def _broadcast(self, payload: dict):
+        if not self._connections:
+            return
+        msg = json.dumps(payload)
+        dead = set()
+        for ws in list(self._connections):
+            try:
+                await ws.send_text(msg)
+            except Exception:
+                dead.add(ws)
+        self._connections -= dead
+
+    async def connect(self, ws):
+        await ws.accept()
+        self._connections.add(ws)
+        geom = self._bridge.get_geometry()
+        if geom:
+            await ws.send_text(json.dumps({'type': 'geometry', **geom}))
+        snap = self._bridge.get_snapshot()
+        if snap:
+            await ws.send_text(json.dumps(snap))
+
+    def disconnect(self, ws):
+        self._connections.discard(ws)
+
+    async def pause(self):
+        self._bridge.send_command({'cmd': 'pause'})
+
+    async def resume(self):
+        self._bridge.send_command({'cmd': 'resume'})
+
+    async def reset(self, n_people: int = None):
+        cmd: dict = {'cmd': 'reset'}
+        if n_people is not None:
+            cmd['n_people'] = n_people
+        self._bridge.send_command(cmd)
+
+    async def load_scenario(self, name: str):
+        self._bridge.send_command({'cmd': 'scenario', 'name': name})
+
+    async def spawn_entrance(self):
+        self._bridge.request_spawn_entrance()
+
+    async def evacuate(self):
+        self._bridge.request_evacuate()
+
+    def last_snapshot(self) -> dict | None:
+        return self._bridge.get_snapshot()

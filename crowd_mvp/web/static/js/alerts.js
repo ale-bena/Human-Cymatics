@@ -1,9 +1,9 @@
 'use strict';
 
 const SEVERITY = {
-    critical: { border: 'border-red-500',    bg: 'bg-red-950',    icon: '🔴', badge: 'text-red-400'    },
-    warning:  { border: 'border-yellow-500', bg: 'bg-yellow-950', icon: '🟡', badge: 'text-yellow-400' },
-    ok:       { border: 'border-green-500',  bg: 'bg-green-950',  icon: '🟢', badge: 'text-green-400'  },
+    critical: { border: 'border-red-400',    bg: 'bg-red-50',     icon: '🔴', badge: 'text-red-500'    },
+    warning:  { border: 'border-yellow-400', bg: 'bg-yellow-50',  icon: '🟡', badge: 'text-yellow-600' },
+    ok:       { border: 'border-green-400',  bg: 'bg-green-50',   icon: '🟢', badge: 'text-green-600'  },
 };
 
 const SEV_ORDER = { critical: 0, warning: 1, ok: 2 };
@@ -82,11 +82,11 @@ function _cardHTML(alert, cfg, sinceText) {
             <span class="text-sm mt-0.5 shrink-0">${cfg.icon}</span>
             <div class="flex-1 min-w-0">
                 <div class="flex items-baseline justify-between gap-2">
-                    <span class="font-semibold text-sm text-slate-100 truncate">${escHtml(alert.title)}</span>
+                    <span class="font-semibold text-sm text-slate-700 truncate">${escHtml(alert.title)}</span>
                     <span class="text-xs text-slate-500 shrink-0" data-since>${sinceText}</span>
                 </div>
-                <div class="text-xs text-slate-300 mt-0.5">${escHtml(alert.description)}</div>
-                <div class="text-xs text-slate-500 mt-1 italic">${escHtml(alert.suggestion)}</div>
+                <div class="text-xs text-slate-600 mt-0.5">${escHtml(alert.description)}</div>
+                <div class="text-xs text-slate-400 mt-1 italic">${escHtml(alert.suggestion)}</div>
             </div>
         </div>`;
 }
