@@ -2,10 +2,13 @@
 # Phase 2: Full interactive interface.
 # Window: 1200x520 — dual panels + tab bar + control panel + status bar.
 # Usage: python crowd_mvp/main.py
+# Usage with web UI: python crowd_mvp/main.py --web [--port 8000]
 
 import sys
 import os
 import asyncio
+import argparse
+import threading
 
 import pygame
 
@@ -21,11 +24,13 @@ from crowd_mvp.config import (
     COLOUR_BTN_ACTIVE, COLOUR_BTN_INACTIVE,
     COLOUR_CONTROL_BG, COLOUR_SLIDER_TRACK, COLOUR_SLIDER_THUMB,
 )
-from crowd_mvp.maps import SMALL_MAP, MEDIUM_MAP, LARGE_MAP, ALL_MAPS
+from crowd_mvp.maps import SMALL_MAP, MEDIUM_MAP, LARGE_MAP, ROOMED_MAP, ALL_MAPS
 from crowd_mvp.simulation import Simulation
-from crowd_mvp.viz.heatmap import build_heatmap_surface
+from crowd_mvp import render
+from crowd_mvp.viz.heatmap import build_heatmap_surface, compute_density_grid
 from crowd_mvp.viz.compare import build_compare_panels
 from crowd_mvp.viz.traffic import build_traffic_panels
+from crowd_mvp.viz.surface3d import build_3d_surface_pygame
 
 
 # ---------------------------------------------------------------------------
@@ -135,10 +140,60 @@ def scale_factor(map_size):
 
 
 # ---------------------------------------------------------------------------
+# Web bridge helpers
+# ---------------------------------------------------------------------------
+
+def _build_web_payload(sim, paused: bool, alert_engine) -> dict:
+    """Build the WebSocket payload the browser frontend expects."""
+    from crowd_mvp.web.heatmap_png import kde_to_b64, estimate_to_b64
+    from crowd_mvp.web.state import _rooms_payload, _doors_payload
+
+    snap = sim.get_snapshot()
+    real, est = sim.get_zone_counts()
+    room_density = sim.get_room_density()
+    door_flow = sim.get_door_flow()
+
+    ext_snap = {
+        **snap,
+        'zone_counts_real': real,
+        'zone_counts_estimated': est,
+        'room_density': room_density,
+        'door_flow': door_flow,
+        'map_def': sim.map_def,
+    }
+    alerts = alert_engine.evaluate(ext_snap)
+
+    agents_xy = [(x, y) for x, y, _ in snap['agents']]
+    kde_b64 = kde_to_b64(agents_xy, sim.map_size)
+    est_b64 = estimate_to_b64(sim.map_def, est)
+
+    return {
+        't': snap['elapsed_s'],
+        'running': not paused,
+        'scenario': 'pygame',
+        'n_people': sim.n_people,
+        'rooms': _rooms_payload(sim.map_def, room_density),
+        'doors': _doors_payload(sim.map_def, door_flow),
+        'agents': [[round(x, 1), round(y, 1), r] for x, y, r in snap['agents']],
+        'kde_png_b64': kde_b64,
+        'estimate_png_b64': est_b64,
+        'alerts': [a.to_dict() for a in alerts],
+    }
+
+
+def _start_web_server(bridge, host: str, port: int) -> None:
+    """Run uvicorn in a background daemon thread (its own event loop)."""
+    import uvicorn
+    from crowd_mvp.web import server as _srv
+    _srv.init_bridge(bridge)
+    uvicorn.run(_srv.app, host=host, port=port, log_level='warning')
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-async def main():
+async def main(web_bridge=None):
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_W, WINDOW_H))
     pygame.display.set_caption(WINDOW_TITLE)
@@ -157,7 +212,7 @@ async def main():
     live_sigma_error  = SIGMA_ERROR
     live_sigma_kernel = SIGMA_KERNEL_DEFAULT
 
-    active_tab = 1  # 1, 2, or 3 (D-04)
+    active_tab = 1  # 1, 2, 3, or 4
 
     # --- Build initial simulation ---
     def build_sim():
@@ -171,6 +226,17 @@ async def main():
 
     sim = build_sim()
 
+    # Web bridge — push initial geometry then snapshots each sniffer tick
+    if web_bridge is not None:
+        from crowd_mvp.web.alerts import AlertEngine as _AlertEngine
+        from crowd_mvp.web.state import _extract_geometry
+        web_alert_engine = _AlertEngine()
+        web_bridge.push_geometry(_extract_geometry(sim.map_def))
+    else:
+        _AlertEngine = None
+        _extract_geometry = None
+        web_alert_engine = None
+
     # Heatmap surface — updated every sniffer tick (D-15)
     heatmap_surface = None
 
@@ -180,6 +246,13 @@ async def main():
     # Tab 2 compare state — updated every sniffer tick (D-04)
     compare_real_counts = {}
     compare_est_counts  = {}
+
+    # Tab 4 — 3D surface density accumulator
+    density_acc    = None   # np.ndarray (GRID_H, GRID_W) running sum
+    density_ticks  = 0
+    tab4_live_surf = None   # pygame.Surface — current-tick 3D surface
+    tab4_avg_surf  = None   # pygame.Surface — session average 3D surface
+    _sim_was_complete = False
 
     # Playback state (D-09: auto-starts running)
     paused = False
@@ -192,19 +265,20 @@ async def main():
     cp_top = CANVAS_H + TAB_BAR_H   # absolute y of control panel top
     cp_mid = cp_top + CONTROL_PANEL_H // 2
 
-    # Map buttons [S][M][L] — left group
+    # Map buttons [S][M][L][R] — left group (22w each to fit 4 in the same span)
     map_btn_rects = {
-        'S': pygame.Rect(10,  cp_top + 8, 28, 22),
-        'M': pygame.Rect(42,  cp_top + 8, 28, 22),
-        'L': pygame.Rect(74,  cp_top + 8, 28, 22),
+        'S': pygame.Rect(10,  cp_top + 8, 22, 22),
+        'M': pygame.Rect(36,  cp_top + 8, 22, 22),
+        'L': pygame.Rect(62,  cp_top + 8, 22, 22),
+        'R': pygame.Rect(88,  cp_top + 8, 22, 22),
     }
     map_label_rect = pygame.Rect(10, cp_top + 2, 60, 12)
 
     # Behavior buttons [W][G][C]
     beh_btn_rects = {
-        'wanderer': pygame.Rect(122, cp_top + 8, 28, 22),
-        'goal':     pygame.Rect(154, cp_top + 8, 28, 22),
-        'social':   pygame.Rect(186, cp_top + 8, 28, 22),
+        'wanderer': pygame.Rect(122, cp_top + 8, 22, 22),
+        'goal':     pygame.Rect(148, cp_top + 8, 22, 22),
+        'social':   pygame.Rect(174, cp_top + 8, 22, 22),
     }
 
     # Sliders — horizontal layout in remaining 1200 - 220 - 80 = 900px, split 3 ways
@@ -221,6 +295,39 @@ async def main():
     running = True
     while running:
         # ----------------------------------------------------------------
+        # Bridge: drain commands from web UI → apply to Pygame state
+        # ----------------------------------------------------------------
+        if web_bridge is not None:
+            for cmd in web_bridge.drain_commands():
+                c = cmd.get('cmd')
+                if c == 'pause':
+                    paused = True
+                elif c == 'resume':
+                    if not sim.is_complete:
+                        paused = False
+                elif c == 'spawn_entrance':
+                    sim.respawn_from_entrance()
+                elif c == 'evacuate':
+                    sim.evacuate()
+                elif c == 'reset':
+                    n_override = cmd.get('n_people')
+                    if n_override is not None:
+                        staged_n_people = int(n_override)
+                    sim = build_sim()
+                    heatmap_surface = None
+                    traffic_panels_cache = None
+                    compare_real_counts = {}
+                    compare_est_counts = {}
+                    density_acc = None
+                    density_ticks = 0
+                    tab4_live_surf = None
+                    tab4_avg_surf = None
+                    _sim_was_complete = False
+                    paused = False
+                    web_alert_engine = _AlertEngine()
+                    web_bridge.push_geometry(_extract_geometry(sim.map_def))
+
+        # ----------------------------------------------------------------
         # Event handling
         # ----------------------------------------------------------------
         for event in pygame.event.get():
@@ -235,15 +342,17 @@ async def main():
                     active_tab = 2
                 elif event.key == pygame.K_3:
                     active_tab = 3
+                elif event.key == pygame.K_4:
+                    active_tab = 4
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
 
                 # Tab buttons
-                tab_w = WINDOW_W // 3
+                tab_w = WINDOW_W // 4
                 if TAB_BAR_RECT.collidepoint(mx, my):
                     col = mx // tab_w
-                    active_tab = col + 1
+                    active_tab = min(col + 1, 4)
 
                 # Map selector (D-10: staged)
                 for key, rect in map_btn_rects.items():
@@ -262,6 +371,11 @@ async def main():
                     traffic_panels_cache = None
                     compare_real_counts = {}
                     compare_est_counts  = {}
+                    density_acc    = None
+                    density_ticks  = 0
+                    tab4_live_surf = None
+                    tab4_avg_surf  = None
+                    _sim_was_complete = False
                     paused = False
 
                 # Pause / Resume button (D-09, D-10, D-11)
@@ -342,6 +456,37 @@ async def main():
             )
             traffic_panels_cache = (traffic_left, traffic_right)
 
+            # Tab 4 — accumulate density grid; rebuild 3D surfaces only when visible
+            grid = compute_density_grid(agent_positions, agent_weights, sim.map_size, live_sigma_kernel)
+            if density_acc is None:
+                density_acc = grid.copy()
+            else:
+                density_acc += grid
+            density_ticks += 1
+            if active_tab == 4:
+                tab4_live_surf = build_3d_surface_pygame(grid, CANVAS_W, CANVAS_H, title="Live Density")
+                avg_grid = density_acc / density_ticks
+                tab4_avg_surf  = build_3d_surface_pygame(avg_grid, CANVAS_W, CANVAS_H, title="Session Average")
+
+            # Push snapshot to web bridge (runs in its own thread at 2 Hz)
+            if web_bridge is not None:
+                web_bridge.push_snapshot(
+                    _build_web_payload(sim, paused, web_alert_engine)
+                )
+
+        # Auto-switch to Tab 4 when simulation completes (final summary view)
+        if sim.is_complete and not _sim_was_complete:
+            _sim_was_complete = True
+            active_tab = 4
+            if density_acc is not None and density_ticks > 0:
+                agent_positions_final = [(a.x, a.y) for a in sim.agents]
+                agent_weights_final   = [1.0] * len(agent_positions_final)
+                grid = compute_density_grid(agent_positions_final, agent_weights_final,
+                                            sim.map_size, live_sigma_kernel)
+                tab4_live_surf = build_3d_surface_pygame(grid, CANVAS_W, CANVAS_H, title="Final Snapshot")
+                avg_grid = density_acc / density_ticks
+                tab4_avg_surf  = build_3d_surface_pygame(avg_grid, CANVAS_W, CANVAS_H, title="Session Average")
+
         # ----------------------------------------------------------------
         # Draw
         # ----------------------------------------------------------------
@@ -349,13 +494,13 @@ async def main():
 
         # --- Left panel: simulation scaled to fit canvas (D-05) ---
         left_surf = screen.subsurface(LEFT_PANEL_RECT)
-        sim.draw_scaled(left_surf, CANVAS_W, CANVAS_H)
+        render.draw_scene(left_surf, sim, CANVAS_W, CANVAS_H)
 
         # --- Right panel: map underlay + KDE heatmap (D-17) ---
         right_surf = screen.subsurface(RIGHT_PANEL_RECT)
         if active_tab == 1:
-            # Layer 1: plain map (zones + POI only, no agents/sniffers)
-            sim.draw_map_scaled(right_surf, CANVAS_W, CANVAS_H)
+            # Layer 1: plain map (rooms/zones + walls/doors + POI, no agents)
+            render.draw_map_scaled(right_surf, sim.map_def, CANVAS_W, CANVAS_H)
 
             # Layer 2: heatmap at 70% opacity blended over the map
             HEATMAP_ALPHA = 178  # 70% of 255
@@ -398,15 +543,29 @@ async def main():
             else:
                 left_surf.fill((20, 20, 30))
                 right_surf.fill((20, 20, 30))
+        elif active_tab == 4:
+            left_surf.fill((18, 18, 42))
+            right_surf.fill((18, 18, 42))
+            waiting_msg = font_tab.render("Waiting for data…", True, (120, 120, 180))
+            if tab4_live_surf is not None:
+                left_surf.blit(tab4_live_surf, (0, 0))
+            else:
+                left_surf.blit(waiting_msg, (CANVAS_W // 2 - waiting_msg.get_width() // 2,
+                                             CANVAS_H // 2 - waiting_msg.get_height() // 2))
+            if tab4_avg_surf is not None:
+                right_surf.blit(tab4_avg_surf, (0, 0))
+            else:
+                right_surf.blit(waiting_msg, (CANVAS_W // 2 - waiting_msg.get_width() // 2,
+                                              CANVAS_H // 2 - waiting_msg.get_height() // 2))
 
-        # End-of-simulation overlay over both panels (D-13)
-        if sim.is_complete:
+        # End-of-simulation overlay — suppressed on Tab 4 (the 3D summary is the overlay)
+        if sim.is_complete and active_tab != 4:
             _draw_end_overlay(screen, font_tab, CANVAS_W, CANVAS_H)
 
         # --- Tab bar (D-04) ---
         pygame.draw.rect(screen, (200, 200, 200), TAB_BAR_RECT)
-        tab_labels = ['Tab 1', 'Tab 2', 'Tab 3']
-        tab_w = WINDOW_W // 3
+        tab_labels = ['Heatmap', 'Compare', 'Traffic', '3D Surface']
+        tab_w = WINDOW_W // 4
         for i, label in enumerate(tab_labels):
             is_active = (active_tab == i + 1)
             tab_rect = pygame.Rect(i * tab_w, CANVAS_H, tab_w, TAB_BAR_H)
@@ -482,4 +641,25 @@ async def main():
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description='Crowd Monitoring MVP')
+    parser.add_argument('--web', action='store_true',
+                        help='Also start the web UI server (http://localhost:PORT)')
+    parser.add_argument('--port', type=int, default=8000,
+                        help='Web server port (default 8000)')
+    parser.add_argument('--host', default='127.0.0.1',
+                        help='Web server host (default 127.0.0.1)')
+    args = parser.parse_args()
+
+    web_bridge = None
+    if args.web:
+        from crowd_mvp.web.bridge import SimBridge
+        web_bridge = SimBridge()
+        t = threading.Thread(
+            target=_start_web_server,
+            args=(web_bridge, args.host, args.port),
+            daemon=True,
+        )
+        t.start()
+        print(f'Web UI → http://{args.host}:{args.port}')
+
+    asyncio.run(main(web_bridge=web_bridge))

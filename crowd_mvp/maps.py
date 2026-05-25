@@ -82,7 +82,152 @@ LARGE_MAP = {
     ]
 }
 
-ALL_MAPS = {'S': SMALL_MAP, 'M': MEDIUM_MAP, 'L': LARGE_MAP}
+# ---------------------------------------------------------------------------
+# ROOMED_MAP — 5 rooms of different sizes connected by narrow doors.
+# Agents must route through doors (A* on room graph) so congestion emerges at
+# doorways — the architectural pattern the WiFi heatmap is meant to surface.
+# Canvas 1000x700. Zones mirror rooms for sniffer placement.
+# ---------------------------------------------------------------------------
+
+ROOMED_MAP = {
+    'size': (1000, 700),
+    # capacity_weight is the room's share of total expected occupancy.
+    # At sim init, capacity = max(5, round(n_people * weight)) so alerts
+    # stay meaningful regardless of crowd size.
+    'rooms': [
+        {'id': 'lobby', 'name': 'Lobby',     'rect': (0,   0,   250, 700), 'capacity_weight': 0.20},
+        {'id': 'hall',  'name': 'Expo Hall', 'rect': (250, 0,   450, 700), 'capacity_weight': 0.50},
+        {'id': 'bar',   'name': 'Bar',       'rect': (700, 0,   300, 280), 'capacity_weight': 0.12},
+        {'id': 'vip',   'name': 'VIP',       'rect': (700, 280, 300, 220), 'capacity_weight': 0.10},
+        {'id': 'rest',  'name': 'Restrooms', 'rect': (700, 500, 300, 200), 'capacity_weight': 0.08},
+    ],
+    'walls': [
+        # Vertical wall lobby <-> hall at x=250 (door gap y=320..380)
+        {'x0': 250, 'y0': 0,   'x1': 250, 'y1': 320},
+        {'x0': 250, 'y0': 380, 'x1': 250, 'y1': 700},
+        # Vertical wall hall <-> right column at x=700 (door gaps y=100..140, 370..400, 580..620)
+        {'x0': 700, 'y0': 0,   'x1': 700, 'y1': 100},
+        {'x0': 700, 'y0': 140, 'x1': 700, 'y1': 370},
+        {'x0': 700, 'y0': 400, 'x1': 700, 'y1': 580},
+        {'x0': 700, 'y0': 620, 'x1': 700, 'y1': 700},
+        # Horizontal wall bar <-> vip at y=280
+        {'x0': 700, 'y0': 280, 'x1': 1000, 'y1': 280},
+        # Horizontal wall vip <-> rest at y=500
+        {'x0': 700, 'y0': 500, 'x1': 1000, 'y1': 500},
+    ],
+    'doors': [
+        {'id': 'd_lobby_hall', 'rooms': ('lobby', 'hall'),
+         'x0': 250, 'y0': 320, 'x1': 250, 'y1': 380, 'center': (250, 350)},
+        {'id': 'd_hall_bar',   'rooms': ('hall', 'bar'),
+         'x0': 700, 'y0': 100, 'x1': 700, 'y1': 140, 'center': (700, 120)},
+        {'id': 'd_hall_vip',   'rooms': ('hall', 'vip'),   # narrowest — congestion point
+         'x0': 700, 'y0': 370, 'x1': 700, 'y1': 400, 'center': (700, 385)},
+        {'id': 'd_hall_rest',  'rooms': ('hall', 'rest'),
+         'x0': 700, 'y0': 580, 'x1': 700, 'y1': 620, 'center': (700, 600)},
+    ],
+    'zones': [   # sniffer regions = rooms for the roomed map
+        {'id': 'lobby', 'rect': (0,   0,   250, 700)},
+        {'id': 'hall',  'rect': (250, 0,   450, 700)},
+        {'id': 'bar',   'rect': (700, 0,   300, 280)},
+        {'id': 'vip',   'rect': (700, 280, 300, 220)},
+        {'id': 'rest',  'rect': (700, 500, 300, 200)},
+    ],
+    # Furniture that blocks movement. Each obstacle rect is expanded into 4
+    # wall segments at sim init so the existing clip_to_walls handles them.
+    # 'type' drives rendering (color + label) in render.py.
+    'obstacles': [
+        # ---- Lobby (info-desk + badge-pickup as long counters) ----
+        {'id': 'info_desk',   'type': 'counter', 'label': 'Info',  'rect': (60,  100, 130, 30)},
+        {'id': 'badge_desk',  'type': 'counter', 'label': 'Badge', 'rect': (60,  570, 130, 30)},
+        # ---- Expo Hall: 9 sponsor booths in 3 rows aligned with door aisles ----
+        {'id': 'booth_A1', 'type': 'booth', 'label': 'A1', 'rect': (295,  40, 70, 60)},
+        {'id': 'booth_A2', 'type': 'booth', 'label': 'A2', 'rect': (445,  40, 70, 60)},
+        {'id': 'booth_A3', 'type': 'booth', 'label': 'A3', 'rect': (595,  40, 70, 60)},
+        {'id': 'booth_B1', 'type': 'booth', 'label': 'B1', 'rect': (295, 230, 70, 60)},
+        {'id': 'booth_B2', 'type': 'booth', 'label': 'B2', 'rect': (445, 230, 70, 60)},
+        {'id': 'booth_B3', 'type': 'booth', 'label': 'B3', 'rect': (595, 230, 70, 60)},
+        {'id': 'booth_C1', 'type': 'booth', 'label': 'C1', 'rect': (295, 450, 70, 60)},
+        {'id': 'booth_C2', 'type': 'booth', 'label': 'C2', 'rect': (445, 450, 70, 60)},
+        {'id': 'booth_C3', 'type': 'booth', 'label': 'C3', 'rect': (595, 450, 70, 60)},
+        # ---- Bar (counter along the top wall) ----
+        {'id': 'bar_counter', 'type': 'bar_counter', 'label': 'Bar', 'rect': (730,  30, 240, 25)},
+        # ---- VIP (two sofas flanking the lounge) ----
+        {'id': 'sofa_L', 'type': 'sofa', 'label': '', 'rect': (730, 410, 70, 30)},
+        {'id': 'sofa_R', 'type': 'sofa', 'label': '', 'rect': (900, 410, 70, 30)},
+        # ---- Restrooms (sink counter) ----
+        {'id': 'sinks',   'type': 'sink',   'label': 'Sinks', 'rect': (720, 520, 100, 25)},
+    ],
+    # Visual-only flourishes — drawn but not collidable.
+    'decor': [
+        # ---- Lobby waiting tables ----
+        {'id': 'lobby_table_1', 'type': 'table', 'rect': (60,  250, 50, 40)},
+        {'id': 'lobby_table_2', 'type': 'table', 'rect': (140, 250, 50, 40)},
+        {'id': 'lobby_table_3', 'type': 'table', 'rect': (60,  430, 50, 40)},
+        {'id': 'lobby_table_4', 'type': 'table', 'rect': (140, 430, 50, 40)},
+        # ---- Bar stools (in front of counter) ----
+        {'id': 'stool_1', 'type': 'stool', 'pos': (760, 75), 'r': 6},
+        {'id': 'stool_2', 'type': 'stool', 'pos': (800, 75), 'r': 6},
+        {'id': 'stool_3', 'type': 'stool', 'pos': (840, 75), 'r': 6},
+        {'id': 'stool_4', 'type': 'stool', 'pos': (880, 75), 'r': 6},
+        {'id': 'stool_5', 'type': 'stool', 'pos': (920, 75), 'r': 6},
+        # ---- Bar tables (lounge area) ----
+        {'id': 'bar_table_1', 'type': 'table', 'rect': (740, 140, 55, 40)},
+        {'id': 'bar_table_2', 'type': 'table', 'rect': (820, 140, 55, 40)},
+        {'id': 'bar_table_3', 'type': 'table', 'rect': (900, 140, 55, 40)},
+        {'id': 'bar_table_4', 'type': 'table', 'rect': (820, 210, 55, 40)},
+        # ---- VIP tables ----
+        {'id': 'vip_coffee', 'type': 'table', 'rect': (830, 460, 40, 22)},
+        {'id': 'vip_side_L', 'type': 'table', 'rect': (740, 310, 55, 40)},
+        {'id': 'vip_side_R', 'type': 'table', 'rect': (905, 310, 55, 40)},
+        # ---- Restroom stall partitions ----
+        {'id': 'stall_1', 'type': 'partition', 'line': (840, 560, 840, 690)},
+        {'id': 'stall_2', 'type': 'partition', 'line': (885, 560, 885, 690)},
+        {'id': 'stall_3', 'type': 'partition', 'line': (930, 560, 930, 690)},
+        {'id': 'stall_4', 'type': 'partition', 'line': (975, 560, 975, 690)},
+        # ---- Lobby corner plants ----
+        {'id': 'plant_1', 'type': 'plant', 'pos': (25,  25),  'r': 10},
+        {'id': 'plant_2', 'type': 'plant', 'pos': (225, 25),  'r': 10},
+        {'id': 'plant_3', 'type': 'plant', 'pos': (25,  675), 'r': 10},
+        {'id': 'plant_4', 'type': 'plant', 'pos': (225, 675), 'r': 10},
+    ],
+    # Realistic POIs — agents target these. Entrance/exit render as door
+    # frames on the lobby perimeter; tables and stands act as dwell points.
+    'poi': [
+        # ---- Doors on lobby perimeter (rendered as door frames) ----
+        {'id': 'entrance', 'category': 'entrance', 'pos': (125, 685)},
+        {'id': 'exit',     'category': 'exit',     'pos': (125,  15)},
+        # ---- Bar tables + counter ----
+        {'id': 'bar_counter_poi', 'category': 'bar',   'pos': (850,  90)},
+        {'id': 'bar_table_1_poi', 'category': 'table', 'pos': (767, 160)},
+        {'id': 'bar_table_2_poi', 'category': 'table', 'pos': (847, 160)},
+        {'id': 'bar_table_3_poi', 'category': 'table', 'pos': (927, 160)},
+        {'id': 'bar_table_4_poi', 'category': 'table', 'pos': (847, 230)},
+        # ---- VIP tables ----
+        {'id': 'vip_table_L_poi', 'category': 'table', 'pos': (767, 330)},
+        {'id': 'vip_table_R_poi', 'category': 'table', 'pos': (932, 330)},
+        {'id': 'vip_coffee_poi',  'category': 'table', 'pos': (850, 471)},
+        # ---- Lobby waiting tables ----
+        {'id': 'lobby_table_1_poi', 'category': 'table', 'pos': (85,  270)},
+        {'id': 'lobby_table_2_poi', 'category': 'table', 'pos': (165, 270)},
+        {'id': 'lobby_table_3_poi', 'category': 'table', 'pos': (85,  450)},
+        {'id': 'lobby_table_4_poi', 'category': 'table', 'pos': (165, 450)},
+        # ---- 9 sponsor stands (one per booth, POI placed just south of booth) ----
+        {'id': 'stand_A1', 'category': 'sponsor_stand', 'pos': (330, 120)},
+        {'id': 'stand_A2', 'category': 'sponsor_stand', 'pos': (480, 120)},
+        {'id': 'stand_A3', 'category': 'sponsor_stand', 'pos': (630, 120)},
+        {'id': 'stand_B1', 'category': 'sponsor_stand', 'pos': (330, 310)},
+        {'id': 'stand_B2', 'category': 'sponsor_stand', 'pos': (480, 310)},
+        {'id': 'stand_B3', 'category': 'sponsor_stand', 'pos': (630, 310)},
+        {'id': 'stand_C1', 'category': 'sponsor_stand', 'pos': (330, 530)},
+        {'id': 'stand_C2', 'category': 'sponsor_stand', 'pos': (480, 530)},
+        {'id': 'stand_C3', 'category': 'sponsor_stand', 'pos': (630, 530)},
+        # ---- Restroom ----
+        {'id': 'bathroom', 'category': 'bathroom', 'pos': (870, 620)},
+    ],
+}
+
+
+ALL_MAPS = {'S': SMALL_MAP, 'M': MEDIUM_MAP, 'L': LARGE_MAP, 'R': ROOMED_MAP}
 
 
 def get_sniffer_positions(map_def):
@@ -110,3 +255,83 @@ def find_zone_for_point(map_def, px, py):
         if x <= px < x + w and y <= py < y + h:
             return zone['id']
     return None
+
+
+def find_room_for_point(map_def, px, py):
+    """Return room id for a point, or None if map has no rooms or point is out of bounds."""
+    for room in map_def.get('rooms', []):
+        x, y, w, h = room['rect']
+        if x <= px < x + w and y <= py < y + h:
+            return room['id']
+    return None
+
+
+def build_room_graph(map_def):
+    """Return adjacency: {room_id: [(neighbor_room_id, door_id, (cx, cy)), ...]}.
+
+    Each edge carries the door's id and center coordinates — A* uses centers as
+    the heuristic / waypoints. Empty dict if the map defines no rooms or doors.
+    """
+    rooms = map_def.get('rooms', [])
+    doors = map_def.get('doors', [])
+    graph = {r['id']: [] for r in rooms}
+    for d in doors:
+        a, b = d['rooms']
+        cx, cy = d['center']
+        if a in graph:
+            graph[a].append((b, d['id'], (cx, cy)))
+        if b in graph:
+            graph[b].append((a, d['id'], (cx, cy)))
+    return graph
+
+
+def obstacles_to_walls(obstacles):
+    """Expand each obstacle rect into 4 wall segments (top/right/bottom/left).
+
+    The simulation appends these to map_def['walls'] so clip_to_walls treats
+    booths/counters/sofas as collidable surfaces — agents must navigate
+    around them, producing realistic crowd flow inside rooms.
+    """
+    walls = []
+    for o in obstacles:
+        x, y, w, h = o['rect']
+        walls.append({'x0': x,     'y0': y,     'x1': x + w, 'y1': y})       # top
+        walls.append({'x0': x + w, 'y0': y,     'x1': x + w, 'y1': y + h})   # right
+        walls.append({'x0': x,     'y0': y + h, 'x1': x + w, 'y1': y + h})   # bottom
+        walls.append({'x0': x,     'y0': y,     'x1': x,     'y1': y + h})   # left
+    return walls
+
+
+def get_room_center(map_def, room_id):
+    """Return (cx, cy) of the named room, or None if not found."""
+    for r in map_def.get('rooms', []):
+        if r['id'] == room_id:
+            x, y, w, h = r['rect']
+            return (x + w // 2, y + h // 2)
+    return None
+
+
+def get_room_capacity(map_def, room_id):
+    """Return capacity of named room, or None if not defined."""
+    for r in map_def.get('rooms', []):
+        if r['id'] == room_id:
+            return r.get('capacity')
+    return None
+
+
+# Floor so a room never reads as "always full" with a tiny crowd.
+_MIN_CAPACITY = 5
+
+
+def compute_room_capacities(map_def, n_people):
+    """Set room['capacity'] from capacity_weight × n_people, in place.
+
+    A room with capacity_weight uses the dynamic value; a room with a
+    hard-coded capacity (no weight) is left untouched. Floor at _MIN_CAPACITY
+    so a small crowd never makes every room read as "full".
+    """
+    for r in map_def.get('rooms', []):
+        weight = r.get('capacity_weight')
+        if weight is None:
+            continue
+        r['capacity'] = max(_MIN_CAPACITY, round(n_people * weight))

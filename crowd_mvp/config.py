@@ -32,6 +32,7 @@ COLOUR_POI_EXIT = (200, 80, 80)      # red
 COLOUR_POI_BAR = (255, 180, 0)       # amber
 COLOUR_POI_STAND = (180, 100, 220)   # purple
 COLOUR_POI_BATHROOM = (80, 180, 200) # teal
+COLOUR_POI_TABLE = (160, 130, 95)    # warm wood — sit-down tables
 COLOUR_OVERLAY_BG = (20, 20, 20, 180) # semi-transparent end overlay (D-11)
 COLOUR_TEXT = (255, 255, 255)
 COLOUR_LABEL = (40, 40, 40)
@@ -51,7 +52,7 @@ STATUS_BAR_H = 20        # bottom status bar (existing, now named)
 
 # Phase 2 — Slider ranges (CTR-01)
 N_PEOPLE_MIN = 10
-N_PEOPLE_MAX = 300
+N_PEOPLE_MAX = 700
 N_PEOPLE_DEFAULT = 50       # small map default
 N_PEOPLE_DEFAULT_M = 150    # medium map default
 N_PEOPLE_DEFAULT_L = 300    # large map default
@@ -69,3 +70,39 @@ COLOUR_BTN_INACTIVE = (180, 180, 180)
 COLOUR_CONTROL_BG   = (230, 230, 230)   # control panel background
 COLOUR_SLIDER_TRACK = (160, 160, 160)
 COLOUR_SLIDER_THUMB = (60,  120, 200)
+
+# Rooms / walls / doors — rendered when a map defines them (e.g. ROOMED_MAP)
+WALL_THICKNESS  = 3
+WALL_COLOR      = (55, 55, 70)
+DOOR_COLOR      = (80, 200, 80)        # bright green — visible "where to cross"
+DOOR_THICKNESS  = 4
+ROOM_LABEL_SIZE = 16
+ROOM_FILL_A     = (245, 245, 250)      # subtle alternating fills so adjacent
+ROOM_FILL_B     = (232, 236, 246)      # rooms read as distinct spaces
+ROOM_BORDER     = (180, 185, 200)
+
+# Obstacles (block movement) — colored by 'type' field on the obstacle dict
+OBSTACLE_COLORS = {
+    'booth':       (218, 165, 95),   # warm orange — sponsor stands
+    'counter':     (130, 145, 175),  # blue-gray — info/badge desks
+    'bar_counter': (120,  85,  60),  # dark wood — bar
+    'sofa':        (170, 105, 105),  # muted red — VIP sofas
+    'sink':        (175, 200, 215),  # light blue — restroom sinks
+}
+OBSTACLE_BORDER  = (70, 70, 80)
+OBSTACLE_LABEL_SIZE = 12
+OBSTACLE_LABEL_COLOR = (40, 40, 50)
+
+# Decor (visual only) — colored by 'type'
+DECOR_STOOL_COLOR     = (110,  80,  55)
+DECOR_TABLE_COLOR     = (200, 185, 150)
+DECOR_PARTITION_COLOR = (150, 155, 170)
+DECOR_PLANT_COLOR     = (90, 150, 90)
+
+# Alert thresholds (web Safety UI)
+ALERT_CAPACITY_WARN  = 0.8
+ALERT_CAPACITY_CRIT  = 1.0
+ALERT_SURGE_RATIO    = 0.5
+ALERT_BOTTLENECK_RATIO = 0.5
+ALERT_EVAC_DISTANCE  = 300
+ALERT_DATAQUAL_RATIO = 0.3

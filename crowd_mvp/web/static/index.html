@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HumanCymatics — Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/css/custom.css">
+    <style>
+        body { background: #f8fafc; }
+    </style>
+</head>
+<body class="text-slate-700 h-screen flex flex-col overflow-hidden select-none">
+
+    <!-- Top bar -->
+    <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 z-10">
+        <div class="flex items-center gap-3">
+            <button id="hamburger-btn"
+                    class="w-9 h-9 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-lg"
+                    title="Toggle sidebar">&#9776;</button>
+            <span class="font-bold text-base tracking-tight text-slate-800">HumanCymatics</span>
+            <span id="screen-badge" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Safety</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span id="status-conn" class="text-slate-400 text-xs">○ Connecting…</span>
+            <span id="status-agents" class="text-slate-400 text-xs">0 agents</span>
+        </div>
+    </header>
+
+    <!-- 3-column body -->
+    <div class="flex flex-1 overflow-hidden">
+
+        <!-- LEFT SIDEBAR -->
+        <nav id="sidebar" class="bg-white border-r border-slate-200 flex flex-col py-2">
+            <a href="#" class="nav-item active" data-screen="safety" aria-current="page">
+                <span class="nav-icon">&#128737;</span>
+                <span class="nav-label">Safety</span>
+            </a>
+            <a href="#" class="nav-item" data-screen="analytics">
+                <span class="nav-icon">&#128202;</span>
+                <span class="nav-label">Sponsor Analytics</span>
+            </a>
+            <a href="#" class="nav-item" data-screen="simulation">
+                <span class="nav-icon">&#127918;</span>
+                <span class="nav-label">Simulation Suite</span>
+            </a>
+            <div class="flex-1"></div>
+        </nav>
+
+        <!-- CENTER + RIGHT: screens container -->
+        <div class="flex-1 flex overflow-hidden relative">
+
+            <!-- ===================== SAFETY: left occupancy bars ===================== -->
+            <!-- Built dynamically by safety.js; shown only on Safety screen -->
+            <div id="safety-bars" class="screen active" data-screen="safety"></div>
+
+            <!-- Shared map (center, always rendered; hidden on analytics) -->
+            <div id="shared-map-area" class="flex-1 flex flex-col overflow-hidden bg-slate-50 p-3 gap-3">
+                <div class="flex-1 rounded-xl overflow-hidden bg-white border border-slate-200 relative">
+                    <div id="map-viewport">
+                        <svg id="map-svg" viewBox="0 0 1000 700"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <g id="layer-rooms"></g>
+                            <image id="heatmap-overlay" x="0" y="0" width="1000" height="700"
+                                   href="" opacity="0.82" preserveAspectRatio="none"/>
+                            <g id="layer-obstacles"></g>
+                            <g id="layer-decor"></g>
+                            <g id="layer-walls"></g>
+                            <g id="layer-doors"></g>
+                            <g id="layer-pois"></g>
+                            <g id="layer-agents"></g>
+                        </svg>
+                    </div>
+                </div>
+                <div id="map-legend" class="flex items-center gap-3 shrink-0">
+                    <span class="text-xs text-slate-400">Low</span>
+                    <div class="legend-gradient h-2 w-28 rounded-full"></div>
+                    <span class="text-xs text-slate-400">High</span>
+                    <span class="text-xs text-slate-400 ml-2">Viridis density scale</span>
+                </div>
+            </div>
+
+            <!-- SAFETY: right alerts panel -->
+            <aside id="alerts-aside" class="w-[300px] bg-white border-l border-slate-200 flex flex-col shrink-0">
+                <div class="px-4 py-3 border-b border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-semibold text-slate-700 text-sm">Safety Alerts</h2>
+                        <div class="flex items-center gap-1.5">
+                            <span id="badge-critical"
+                                  class="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-mono min-w-[1.25rem] text-center"></span>
+                            <span id="badge-warning"
+                                  class="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-mono min-w-[1.25rem] text-center"></span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <button class="filter-chip active" data-filter="all">All</button>
+                        <button class="filter-chip" data-filter="critical">Critical</button>
+                        <button class="filter-chip" data-filter="warning">Warning</button>
+                    </div>
+                </div>
+                <div id="alerts-list" class="flex-1 overflow-y-auto p-3 space-y-2">
+                    <div class="text-slate-400 text-sm text-center py-10">Connecting…</div>
+                </div>
+            </aside>
+
+            <!-- ===================== ANALYTICS SCREEN ===================== -->
+            <div id="analytics-screen" class="screen" data-screen="analytics">
+                <div class="analytics-card">
+                    <h3>Venue Occupancy</h3>
+                    <div class="kpi-tiles">
+                        <div class="kpi-tile">
+                            <div class="kpi-label">Current occupancy</div>
+                            <div class="kpi-value"><span id="analytics-venue-pct">—</span></div>
+                        </div>
+                    </div>
+                    <div style="height:160px;position:relative">
+                        <canvas id="chart-venue"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3>Stand Analytics</h3>
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+                        <select id="stand-select"
+                                class="bg-white text-slate-700 text-sm border border-slate-300 rounded-md px-3 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer">
+                        </select>
+                        <button id="btn-report"
+                                class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                            Generate Report
+                        </button>
+                    </div>
+                    <div class="kpi-tiles">
+                        <div class="kpi-tile">
+                            <div class="kpi-label">Current visitors</div>
+                            <div class="kpi-value"><span id="analytics-current-visitors">—</span></div>
+                        </div>
+                        <div class="kpi-tile">
+                            <div class="kpi-label">Avg permanence</div>
+                            <div class="kpi-value"><span id="analytics-avg-permanence">—</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <h3>Stand Occupancy (selected)</h3>
+                    <div style="height:160px;position:relative">
+                        <canvas id="chart-stand"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===================== SIMULATION SUITE SCREEN ===================== -->
+            <!-- Sidebar panel beside the shared map; NOT an absolute overlay -->
+            <div id="simulation-screen" class="screen" data-screen="simulation">
+                <h3 class="sim-panel-heading">Controls</h3>
+                <div class="sim-controls">
+                    <button id="btn-spawn-entrance" class="sim-btn sim-btn-primary">
+                        Spawn from entrance
+                    </button>
+                    <button id="btn-evacuate" class="sim-btn sim-btn-danger">
+                        Evacuate
+                    </button>
+                    <button class="sim-btn sim-btn-ghost" disabled title="Coming soon">
+                        Block door… (soon)
+                    </button>
+                </div>
+                <div class="sim-divider"></div>
+                <h3 class="sim-panel-heading">Live stats</h3>
+                <div class="sim-stat-block">
+                    <span class="sim-stat-label">Agents in venue</span>
+                    <span class="sim-stat-value" id="sim-agent-count">—</span>
+                </div>
+                <div class="sim-stat-block">
+                    <span class="sim-stat-label">Evacuation timer</span>
+                    <span class="sim-evac-timer" id="sim-evac-timer">—</span>
+                </div>
+            </div>
+
+        </div><!-- end screens container -->
+    </div><!-- end body -->
+
+    <!-- Status bar -->
+    <div class="h-6 bg-white border-t border-slate-200 flex items-center px-4 shrink-0">
+        <span class="text-slate-400 text-xs ml-auto">HumanCymatics v2.0</span>
+    </div>
+
+    <script src="/static/js/maps.js"></script>
+    <script src="/static/js/alerts.js"></script>
+    <script src="/static/js/screens/safety.js"></script>
+    <script src="/static/js/screens/analytics.js"></script>
+    <script src="/static/js/screens/simulation.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
